@@ -58,7 +58,7 @@ hands_module = mp_hands.Hands(
 # -------------------------------------------------
 # Window + Camera
 # -------------------------------------------------
-WINDOW_NAME = "Virtual Chemistry Lab"
+WINDOW_NAME = "Virtual Chemistry Lab-1"
 cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
