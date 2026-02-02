@@ -39,8 +39,8 @@ LERP_FACTOR = 0.18       # smooth movement factor
 SLOT_COUNT = 3      # number of platform slots
 
 # make slots a bit smaller and nicer
-SLOT_W = 180             # slot width (for hitbox & rendering)
-SLOT_H = 130             # slot height
+SLOT_W = 180            # slot width (for hitbox & rendering)
+SLOT_H = 100             # slot height
 
 # place platform at ~80% of screen height instead of hard 500px
 # (works on any resolution)
