@@ -1,4 +1,5 @@
 import cv2
+import math
 import numpy as np
 from PIL import Image
 
@@ -45,7 +46,8 @@ def render_world(frame, world_objects, BASE_SIZE):
         img = obj["img"].resize((size, size), Image.Resampling.LANCZOS)
 
         if obj.get("current_angle", 0.0) != 0:
-            img = img.rotate(obj["current_angle"], expand=True, resample=Image.Resampling.BILINEAR)
+            
+            img = img.rotate(math.degrees(obj["current_angle"]), expand=True, resample=Image.Resampling.BILINEAR)
 
         img_np = np.array(img)
 

@@ -17,7 +17,7 @@ def update(world_objects, dt, ensure_burner_fields):
         # If grabbed, stop linear velocity and damp rotation
         if obj.get("grabbed", False):
             obj["vel"] *= 0.0
-            obj["angular_vel"] *= 0.94
+            continue
 
         # Global angular damping
         obj["angular_vel"] *= 0.96

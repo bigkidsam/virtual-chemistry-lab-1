@@ -28,8 +28,8 @@ SPAWN_COOLDOWN = 0.7   # seconds between spawning tools
 #DEFAULT_TOOL_SCALE = 0.8
 
 
-BASE_SIZE = 100          # base render size for flask / tools
-LERP_FACTOR = 0.18       # smooth movement factor
+BASE_SIZE = 150          # base render size for flask / tools
+LERP_FACTOR = 0.25       # smooth movement factor
 
 
 # ------------------------------------------------------------
