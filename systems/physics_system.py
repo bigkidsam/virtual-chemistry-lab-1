@@ -1,7 +1,25 @@
 from physics import apply_gravity
 
-def update(world_objects, dt, floor_y):
+def update(world_objects, dt, floor_y,ensure_burner_fields):
     for obj in world_objects:
         if not obj.get("active", True):
             continue
-        apply_gravity(obj, dt, floor_y)
+        ensure_burner_fields(obj)
+        grabbed = obj.get("grabbed",False )
+        
+        if not grabbed:
+            apply_gravity(obj,dt,floor_y)
+        else:
+            obj["vel"]*=0.0
+            obj["angular_vel"]*=0.90
+            
+            obj["angular_vel"]*=0.96
+            obj["current_angle"]+= obj["angular_vel"]*dt *60.0
+            
+            size=obj.get("size",80)
+            bottom=obj["pos"][1] +size // 2
+            
+            if obj["vel"][1]> 0:
+                obj["vel"][1]=0
+                obj["vel"][0]*=0.85    
+        

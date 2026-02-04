@@ -149,6 +149,7 @@ try:
 
         frame = cv2.flip(frame, 1)
         H, W = frame.shape[:2]
+        TABLE_TOP_Y=int(H*0.62)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         
@@ -212,7 +213,7 @@ try:
         # -------------------------
         floor_y = H - 80
         grab_update(detected_hands,world_objects)
-        physics_update(world_objects, dt, floor_y)
+        physics_update(world_objects, dt,TABLE_TOP_Y, ensure_burner_fields)
         motion_update(world_objects,dt,ensure_burner_fields)
         particle_update(particles, dt)
 

@@ -84,8 +84,11 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
         y2 = sy + SLOT_H // 2
 
         # slot outline
-        cv2.rectangle(out, (x1, y1), (x2, y2), (220, 220, 220), 1)
-
+        cv2.rectangle(out, (x1, y1), (x2, y2), (55, 55, 55), -1)
+        cv2.rectangle(out, (x1, y1), (x2, y2), (200, 200, 200), 2)
+        
+        cv2.rectangle(out,(x1+4,y1+4),(x2+4,y2+4),(30,30,30),-1)
+        
         # glow
         glow = s.get("glow", 0.0)
         if glow > 0.01:
@@ -122,6 +125,19 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
             )
 
     return out
+
+def rounded_rect(img,pt1,pt2,colour,r=10,thickness=-1):
+    x1,y1 = pt1
+    x2,y2=pt2
+    cv2.rectangle(img,(x1+r,y1),(x2-r,y2),color,thickness)
+    cv2.rectangle(img,(x1,y1+r),(x2,y2-r),color,thickness)
+    cv2.circle(img,(x1+r,y1+r),r,color,thickness)
+    cv2.circle(img,(x2-r,y1+r),r,color,thickness)
+    cv2.circle(img,(x1+r,y2-r),r,color,thickness)
+    cv2.circle(img,(x1-r,y2-r),r,color,thickness)
+    
+    
+    rounded_rect(out, (x1,y1),(x2,y2),(55,55,55),r=12)
 
 # render 
 
