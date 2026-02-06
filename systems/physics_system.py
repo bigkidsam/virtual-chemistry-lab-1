@@ -21,5 +21,11 @@ def update(world_objects, dt, floor_y,ensure_burner_fields):
             
             if obj["vel"][1]> 0:
                 obj["vel"][1]=0
-                obj["vel"][0]*=0.85    
+                obj["vel"][0]*=0.85
+                
+                bottom = obj["pos"][1]+obj["size"]//2
+                
+                if bottom > floor_y:
+                    obj["pos"][1]=floor_y-obj["size"]//2
+                    obj["vel"][1]=0 
         

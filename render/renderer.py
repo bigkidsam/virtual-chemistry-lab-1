@@ -4,6 +4,9 @@ import numpy as np
 from PIL import Image
 
 
+
+
+
 def overlay_image_alpha(bg, fg, x, y, alpha_mult=1.0):
     """Overlay RGBA fg onto BGR bg."""
     h, w = bg.shape[:2]
@@ -126,49 +129,15 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
 
     return out
 
-def rounded_rect(img,pt1,pt2,colour,r=10,thickness=-1):
-    x1,y1 = pt1
-    x2,y2=pt2
-    cv2.rectangle(img,(x1+r,y1),(x2-r,y2),color,thickness)
-    cv2.rectangle(img,(x1,y1+r),(x2,y2-r),color,thickness)
-    cv2.circle(img,(x1+r,y1+r),r,color,thickness)
-    cv2.circle(img,(x2-r,y1+r),r,color,thickness)
-    cv2.circle(img,(x1+r,y2-r),r,color,thickness)
-    cv2.circle(img,(x1-r,y2-r),r,color,thickness)
+#lab_table
+
+def render_platform_base(out,desk_img,H):
+    h,w=out.shape[:2]
     
+    desk_resized=cv2.resize(desk_img, (w, h))
     
-    rounded_rect(out, (x1,y1),(x2,y2),(55,55,55),r=12)
-
-# render 
-
-def render_platform_base(out, H):
-    """
-    Draws the lab table at a fixed screen-relative position.
-    """
-    h, w = out.shape[:2]
-
-    # Platform position (relative to screen)
-    platform_height = 220
-    top = int(H * 0.62)
-    bottom = top + platform_height
-    left = int(w * 0.1)
-    right = int(w * 0.9)
-
-    overlay = out.copy()
-
-    cv2.rectangle(
-        overlay,
-        (left, top),
-        (right, bottom),
-        (60, 60, 60),  # lab table gray
-        -1,
-    )
-
-    # subtle blend (now that it's confirmed)
-    out = cv2.addWeighted(overlay, 0.45, out, 0.55, 0)
+    out=overlay_image_alpha(out,desk_resized,0,0)
     return out
-
-
 
 # render_toolbar 
 def render_toolbar(out, toolbar_img, y=0):

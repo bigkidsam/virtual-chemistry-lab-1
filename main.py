@@ -36,7 +36,10 @@ from systems.grab_system import update as grab_update
 from render.renderer import render_world, render_slots,render_platform_base,render_toolbar,render_burner_flames,render_particles
 
 
+#lab_table Image loading
 
+desk_img=cv2.imread("tool_images/lab_table.png",cv2.IMREAD_UNCHANGED)
+desk_img=cv2.cvtColor(desk_img,cv2.COLOR_BGR2RGB)
 # -------------------------------------------------
 # Global state
 # -------------------------------------------------
@@ -226,12 +229,13 @@ try:
         # Render (temporary inline)
         # -------------------------
         out = render_world(frame,world_objects,BASE_SIZE)
-        out = render_platform_base(out,H)
+        out = render_platform_base(out,desk_img,H)
         out = render_slots(out,slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
         out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
         out = render_particles(out,particles)
         cv2.imshow(WINDOW_NAME,out)
+        
         
 
         # -------------------------
