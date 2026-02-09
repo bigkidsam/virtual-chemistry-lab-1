@@ -136,8 +136,7 @@ def render_platform_base(out,desk_img,H):
     
     desk_resized=cv2.resize(desk_img, (w, h))
     
-    out=overlay_image_alpha(out,desk_resized,0,0)
-    return out
+    return desk_resized.copy()
 
 # render_toolbar 
 def render_toolbar(out, toolbar_img, y=0):

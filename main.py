@@ -228,12 +228,12 @@ try:
         # -------------------------
         # Render (temporary inline)
         # -------------------------
-        out = render_world(frame,world_objects,BASE_SIZE)
-        out = render_platform_base(out,desk_img,H)
+        out = render_platform_base(frame,desk_img,H)
+        out = render_world(out,world_objects,BASE_SIZE)
+        out = render_particles(out,particles)
+        out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
         out = render_slots(out,slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
-        out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
-        out = render_particles(out,particles)
         cv2.imshow(WINDOW_NAME,out)
         
         
