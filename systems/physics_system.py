@@ -1,7 +1,7 @@
 from physics import apply_gravity
 
-def update(world_objects, dt, floor_y,ensure_burner_fields):
-    for obj in world_objects:
+def update(state, dt, floor_y,ensure_burner_fields):
+    for obj in state:
         if not obj.get("active", True):
             continue
         ensure_burner_fields(obj)

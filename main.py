@@ -34,11 +34,20 @@ from systems.motion_system import update as motion_update
 from systems.particle_systems import update as particle_update ,spawn_smoke
 from systems.grab_system import update as grab_update
 from render.renderer import render_world, render_slots,render_platform_base,render_toolbar,render_burner_flames,render_particles
+from core.asset_manager import AssetManager
+
+assets=AssetManager
+assets.load_tool_images()
+assets.load_flame_frames()
+assets.load_desk()
 
 
 #lab_table Image loading
 
-desk_img=cv2.imread("tool_images/lab_table.png",cv2.IMREAD_UNCHANGED)
+desk_img=cv2.imread("tool_images/lab_table.png")
+b,g,r=cv2.split(desk_img)
+alpha= np.where((b<10)&(g<10)&(r<10),0,255).astype(np.uint8)
+desk_img =cv2.merge([b,g,r,a])
 desk_img=cv2.cvtColor(desk_img,cv2.COLOR_BGR2RGB)
 # -------------------------------------------------
 # Global state
@@ -95,20 +104,18 @@ DROPLET_FRAMES = load_frames("tool_images/droplet_frames", "drop", 200)
 # -------------------------------------------------
 # World state
 # -------------------------------------------------
-world_objects = [
-    make_object("flask", 300, 220),
-    make_object("flask", 600, 220),
+from core.state import LabState
+
+state = LabState()
+
+state.world_objects =[
+    make_object("flask",300,220,assets),
+    make_object("flask",600,220),
+    
 ]
 
-slot_states = create_slots()
-droplets = []
+state_slot_states= create_slots()
 
-particles=[]
-
-hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
-pinch_prev = {"Left": False, "Right": False}
-
-prev_time = time.time()  
 
 
 
@@ -216,7 +223,7 @@ try:
         # -------------------------
         floor_y = H - 80
         grab_update(detected_hands,world_objects)
-        physics_update(world_objects, dt,TABLE_TOP_Y, ensure_burner_fields)
+        physics_update(state,dt,floor_y)
         motion_update(world_objects,dt,ensure_burner_fields)
         particle_update(particles, dt)
 

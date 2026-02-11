@@ -131,12 +131,30 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
 
 #lab_table
 
-def render_platform_base(out,desk_img,H):
-    h,w=out.shape[:2]
+def render_platform_base(frame,desk_img,H):
+    out = frame.copy()
+    if desk_img is None:
+        return out
     
-    desk_resized=cv2.resize(desk_img, (w, h))
+    dh,dw=desk_img.shape[:2]
     
-    return desk_resized.copy()
+    target_h=int(H*0.30)
+    
+    scale = target_h/dh
+    new_w = int(dw*scale)
+    new_h = target_h
+    
+    desk=cv2.resize(desk_img, (new_w, new_h))
+    y =H-new_h
+    
+    x=(out.shape[1]-new_w)//2
+    
+    if desk.shape[2]==4:
+        out=overlay_image_alpha(out,desk,x,y)
+    else:
+        out[y:y+new_h, x:x+new_w]=desk
+    
+    return out
 
 # render_toolbar 
 def render_toolbar(out, toolbar_img, y=0):

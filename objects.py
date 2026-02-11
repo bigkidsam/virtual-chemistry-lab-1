@@ -74,8 +74,8 @@ def base_object(tool_id: str, x: float, y: float, img: Image.Image):
 #  FLASK
 # ============================================================
 
-def make_flask(x, y):
-    img = load_tool_image("flask")      # flask.png in tool_images
+def make_flask(x, y,assets):
+    img = assets.get_tool("flask")      # flask.png in tool_images
     obj = base_object("flask", x, y, img)
 
     # default liquid
@@ -145,13 +145,13 @@ def make_burner(x, y):
 # MAIN FACTORY USED BY main.py
 # ============================================================
 
-def make_object(tool_id="flask", x=300, y=200):
+def make_object(tool_id="flask", x=300, y=200, assets=None):
     """
     Tool dispatcher used by main.py and toolbar.
     """
 
     if tool_id == "flask":
-        return make_flask(x, y)
+        return make_flask(x, y,assets)
     if tool_id == "beaker":
         return make_beaker(x, y)
     if tool_id == "test_tube":
