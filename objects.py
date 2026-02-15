@@ -63,6 +63,10 @@ def base_object(tool_id: str, x: float, y: float, img: Image.Image):
         "alpha": 1.0,
         "img": img,
         "active": True,
+        
+        "_cache_img":None,
+        "_cache_scale":None,
+        "_cache_angle":None,
 
         # Liquids (used for flasks, can be 0 for others)
         "liquid_color": None,
@@ -126,7 +130,7 @@ def make_dropper(x, y):
 
 # ============================================================
 #  BURNER (WITH FLAME STATE)
-# ============================================================
+# ================================Rewrite renderer with caching properly============================
 
 def make_burner(x, y):
     img = load_tool_image("burner")

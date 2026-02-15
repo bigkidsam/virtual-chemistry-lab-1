@@ -37,22 +37,42 @@ def overlay_image_alpha(bg, fg, x, y, alpha_mult=1.0):
 def render_world(frame, world_objects, BASE_SIZE):
     
     """
-    Draw only world objects (no slots, no UI yet)
+    Optimized wworld renderer wwith caching.
     """
-    out = frame.copy()
+    out = frame
 
     for obj in world_objects:
         if not obj.get("active", True):
             continue
-
-        size = int(BASE_SIZE * obj.get("scale", 1.0))
-        img = obj["img"].resize((size, size), Image.Resampling.LANCZOS)
-
-        if obj.get("current_angle", 0.0) != 0:
+        
+        scale=obj.get("scale",1.0)
+        angle =obj.get("current_angle",0.0)
+        size=int(BASE_SIZE*scale)
+        
+        if (
+            obj.get["_cached_img"] is None
+            or obj.get["_cached_scale"] != size
+            or obj.get["_cached_angle"] != angle
+            ):
             
-            img = img.rotate(math.degrees(obj["current_angle"]), expand=True, resample=Image.Resampling.BILINEAR)
+            
+            
+            img= Image.fromarray(obj["img"])
+            
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
 
-        img_np = np.array(img)
+        if angle != 0:
+            
+            img = img.rotate(math.degrees(angle), expand=True, resample=Image.Resampling.BILINEAR,
+            
+            )
+            
+            
+            obj["_cached_img"]=np.array(img)
+            obj["_cached_scale"]=size
+            obj["_cached_angle"]=angle
+
+        img_np = obj["_cached_img"]
 
         h, w = img_np.shape[:2]
         x = int(obj["pos"][0] - w // 2)

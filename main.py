@@ -36,7 +36,7 @@ from systems.grab_system import update as grab_update
 from render.renderer import render_world, render_slots,render_platform_base,render_toolbar,render_burner_flames,render_particles
 from core.asset_manager import AssetManager
 
-assets=AssetManager
+assets=AssetManager()
 assets.load_tool_images()
 assets.load_flame_frames()
 assets.load_desk()
@@ -44,11 +44,7 @@ assets.load_desk()
 
 #lab_table Image loading
 
-desk_img=cv2.imread("tool_images/lab_table.png")
-b,g,r=cv2.split(desk_img)
-alpha= np.where((b<10)&(g<10)&(r<10),0,255).astype(np.uint8)
-desk_img =cv2.merge([b,g,r,a])
-desk_img=cv2.cvtColor(desk_img,cv2.COLOR_BGR2RGB)
+
 # -------------------------------------------------
 # Global state
 # -------------------------------------------------
@@ -97,8 +93,7 @@ def load_frames(folder, prefix, max_count=200):
     return frames
 
 
-FLAME_FRAMES = load_frames("tool_images/flame_frames", "flame", 300)
-DROPLET_FRAMES = load_frames("tool_images/droplet_frames", "drop", 200)
+
 
 
 # -------------------------------------------------
@@ -110,11 +105,12 @@ state = LabState()
 
 state.world_objects =[
     make_object("flask",300,220,assets),
-    make_object("flask",600,220),
+    make_object("flask",600,220,assets),
     
 ]
 
 state_slot_states= create_slots()
+state.particles=[]
 
 
 
@@ -145,6 +141,7 @@ def compute_slot_positions(W, H):
 # -------------------------------------------------
 # Main loop
 # -------------------------------------------------
+prev_time=time.time()
 try:
     while True:
         now = time.time()
@@ -166,10 +163,10 @@ try:
         
         # - - - - - - - - - - - - - - - - - - - - - - - -
         
-        for obj in world_objects:
+        for obj in state.world_objects:
             if obj.get("type") == "burner" and obj.get("flame_on"):
                 spawn_smoke(
-            particles,
+            state.particles,
             obj["pos"][0],
             obj["pos"][1] - BASE_SIZE // 2 - 30,
             count=2,
@@ -195,7 +192,7 @@ try:
                 thumb_px = np.array([thumb.x * W, thumb.y * H])
                 mcp_px = np.array([mcp.x * W, mcp.y * H])
 
-                buf = hand_buffers[label]
+                buf = state.hand_buffers[label]
                 buf.append(wrist_px)
                 smooth_wrist = np.mean(buf, axis=0)
 
@@ -206,26 +203,26 @@ try:
                     "angle": math.atan2(mcp_px[1]-wrist_px[1], mcp_px[0]-wrist_px[0]),
                 }
                 
-                grab_update(detected_hands, world_objects)
+                grab_update(detected_hands, state.world_objects)
 
 
         # -------------------------
         # Toolbar
         # -------------------------
         toolbar, icon_positions = draw_ribbon(W)
-        handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects)
+        handle_ribbon_interaction(detected_hands, W, H, icon_positions, state.world_objects)
 
-        for obj in world_objects:
+        for obj in state.world_objects:
             if obj.get("type")=="burner":
                 obj["flame_on"] = True
         # -------------------------
         # Physics (gravity only)
         # -------------------------
         floor_y = H - 80
-        grab_update(detected_hands,world_objects)
-        physics_update(state,dt,floor_y)
-        motion_update(world_objects,dt,ensure_burner_fields)
-        particle_update(particles, dt)
+        grab_update(detected_hands,state.world_objects)
+        physics_update(state,dt,floor_y,ensure_burner_fields)
+        motion_update(state.world_objects,dt,ensure_burner_fields)
+        particle_update(state.particles, dt)
 
         # -------------------------
         # Rotation & damping
@@ -235,11 +232,11 @@ try:
         # -------------------------
         # Render (temporary inline)
         # -------------------------
-        out = render_platform_base(frame,desk_img,H)
-        out = render_world(out,world_objects,BASE_SIZE)
-        out = render_particles(out,particles)
-        out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
-        out = render_slots(out,slot_states,SLOT_W,SLOT_H)
+        out = render_platform_base(frame,assets.get_desk(),H)
+        out = render_world(out,state.world_objects,BASE_SIZE)
+        out = render_particles(out,state.particles)
+        out = render_burner_flames(out,state.world_objects, dt,BASE_SIZE)
+        out = render_slots(out,state.slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
         cv2.imshow(WINDOW_NAME,out)
         
