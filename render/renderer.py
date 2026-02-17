@@ -40,39 +40,60 @@ def render_world(frame, world_objects, BASE_SIZE):
     Optimized wworld renderer wwith caching.
     """
     out = frame
+    
+    
 
     for obj in world_objects:
+        
         if not obj.get("active", True):
             continue
         
+        if "img" not in obj or obj["img"] is None:
+            continue
+        
+        
+        
+            if "_cached_img" not in obj:
+                obj["_cached_img"] = None
+                obj["_cached_scale"] = None
+            obj["_cached_angle"] = None
+            
         scale=obj.get("scale",1.0)
         angle =obj.get("current_angle",0.0)
         size=int(BASE_SIZE*scale)
         
-        if (
-            obj.get["_cached_img"] is None
-            or obj.get["_cached_scale"] != size
-            or obj.get["_cached_angle"] != angle
-            ):
+        if(
+        
+        
+            obj["_cached_img"] is None
+            or obj["_cached_scale"] != size
+            or obj["_cached_angle"] != angle
+        ):
             
+            base_img=obj["img"]
             
+            if isinstance(base_img,np.ndarray):
+                img=Image.fromarray(base_img)
+            else:
+                img=base_img
+            img=img.resize((size,size),Image.Resampling.LANCZOS)
             
-            img= Image.fromarray(obj["img"])
-            
-        img = img.resize((size, size), Image.Resampling.LANCZOS)
-
-        if angle != 0:
-            
-            img = img.rotate(math.degrees(angle), expand=True, resample=Image.Resampling.BILINEAR,
-            
-            )
-            
-            
-            obj["_cached_img"]=np.array(img)
-            obj["_cached_scale"]=size
-            obj["_cached_angle"]=angle
+            if angle !=0:
+                img = img.rotate(
+                    math.degrees(angle),
+                    expand=True,
+                    resampling=Image.Resampling.BILINEAR,
+                )
+                
+                obj["_cached_img"]=np.array(img)
+                obj["_cached_img"]= size
+                obj["_cached_img"]= angle
+                
 
         img_np = obj["_cached_img"]
+        
+        if img_np is None:
+            continue
 
         h, w = img_np.shape[:2]
         x = int(obj["pos"][0] - w // 2)
