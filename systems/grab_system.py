@@ -10,6 +10,7 @@ def try_grab(obj, hand, label):
     """
     obj["grabbed"] = True
     obj["grabbed_by"] = label
+    obj["grabbed_by_hand"] = label
     obj["grab_offset"] = obj["pos"] - hand["wrist"]
     obj["grab_angle"] = obj["current_angle"] - hand["angle"]
 
@@ -20,8 +21,9 @@ def release(obj):
     """
     obj["grabbed"] = False
     obj["grabbed_by"] = None
-    obj["grab_offset"] = None
-    obj["grab_angle"] = None
+    obj["grabbed_by_hand"] = None
+    obj["grab_offset"] = np.array([0.0, 0.0], dtype=float)
+    obj["grab_angle"] = 0.0
 
 
 def update(hands, world_objects):
