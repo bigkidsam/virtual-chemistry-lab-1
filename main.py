@@ -1,33 +1,20 @@
-"""
-Updated main.py for Virtual Chemistry Lab
-- Physics extracted to physics_system
-- Indentation and logic fixed
-- Behavior unchanged
-"""
-
 import os
 import time
 import math
 from collections import deque
 import numpy as np
 import cv2
-from PIL import Image, ImageDraw
+from PIL import Image
 import mediapipe as mp
 
 from config import (
-    RIBBON_H, ICON_SIZE, TOOL_SPACING, SPAWN_COOLDOWN,
     BASE_SIZE,
     SLOT_COUNT, SLOT_W, SLOT_H, SLOT_Y, SLOT_SPACING,
-    GRAVITY,
-    REACTION_DURATION, SMOKE_PARTICLES,
-    FLAME_SPEED, FLAME_SCALE, FLAME_OFFSET_Y,
 )
 
-from utils import clamp, lerp, distance
-from tools import TOOLS, load_tool_image
+from utils import distance
 from objects import make_object
 from lab_platform import create_slots
-from reactions import trigger_reaction
 from ui_toolbar import draw_ribbon, handle_ribbon_interaction
 from systems.physics_system import update as physics_update
 from systems.motion_system import update as motion_update
@@ -40,10 +27,6 @@ from render.renderer import render_world, render_slots,render_platform_base,rend
 # -------------------------------------------------
 # Global state
 # -------------------------------------------------
-hand_holding = {"Left": None, "Right": None}
-ROTATABLE_TOOLS = {"flask", "test_tube"}
-
-
 # -------------------------------------------------
 # MediaPipe
 # -------------------------------------------------
@@ -98,8 +81,6 @@ world_objects = [
 ]
 
 slot_states = create_slots()
-droplets = []
-
 particles=[]
 
 hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
@@ -150,6 +131,7 @@ try:
         frame = cv2.flip(frame, 1)
         H, W = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        compute_slot_positions(W, H)
 
         
         
@@ -194,8 +176,6 @@ try:
                     "pinch": distance(index_px, thumb_px) < 40,
                     "angle": math.atan2(mcp_px[1]-wrist_px[1], mcp_px[0]-wrist_px[0]),
                 }
-                
-                grab_update(detected_hands, world_objects)
 
 
         # -------------------------
@@ -204,14 +184,12 @@ try:
         toolbar, icon_positions = draw_ribbon(W)
         handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects)
 
-        for obj in world_objects:
-            if obj.get("type")=="burner":
-                obj["flame_on"] = True
+
         # -------------------------
         # Physics (gravity only)
         # -------------------------
         floor_y = H - 80
-        grab_update(detected_hands,world_objects)
+        grab_update(detected_hands, world_objects)
         physics_update(world_objects, dt, floor_y)
         motion_update(world_objects,dt,ensure_burner_fields)
         particle_update(particles, dt)
