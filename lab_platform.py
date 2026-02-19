@@ -29,9 +29,6 @@ def create_slots():
             'tool': None,                    # tool ID like "burner", "rack", etc.
             'reaction': None,                # reaction dict or None
             'reaction_start': 0.0,           # timestamp of reaction start
-            'reaction_result': None,         # recipe output metadata
-            'heated_since': None,            # when slot became actively heated
-            'last_object_id': None,          # for detecting new pours into slot
             'glow': 0.9,                     # for highlighting
             'smoke_particles': [],           # smoke & vapor effects
         })
