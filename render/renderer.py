@@ -1,6 +1,10 @@
 import cv2
+import math
 import numpy as np
 from PIL import Image
+
+
+
 
 
 def overlay_image_alpha(bg, fg, x, y, alpha_mult=1.0):
@@ -33,39 +37,72 @@ def overlay_image_alpha(bg, fg, x, y, alpha_mult=1.0):
 def render_world(frame, world_objects, BASE_SIZE):
     
     """
-    Draw only world objects (no slots, no UI yet)
+    Optimized wworld renderer wwith caching.
     """
-    out = frame.copy()
-
+    out = frame
+    
+    
     for obj in world_objects:
         if not obj.get("active", True):
             continue
+        if "img" not in obj or obj["img"] is None:
+            continue
+        
+        if "_cached_img" not in obj:
+            obj["_cached_img"]=None
+            obj["_cached_scale"]=None
+            obj["_cached_angle"]=None
+            
+            
+            scale= obj.get("scale",1.0)
+            angle=obj.get("current_angle",0.0)
+            size =int(BASE_SIZE*scale)
+            
+            if (
+                obj["_cached_img"]is None
+                or obj["_cached_scale"]!= size
+                or obj["_cached_angle"]!= angle
+                
+            ):
+                base_img = obj["img"]
+                img = Image.fromarray(base_img) if isinstance(base_img,np.ndarray) else base_img
+                img = img.resize((size,size),Image.Resampling.LANCZOS)
+                
+                
+                if angle != 0:
+                    img =img.rotate(
+                        math.degrees(angle),
+                        expand=True,
+                        resampling=Image.Resampling.BILINEAR,
+                        
+                    )
+                    
+                    obj["_cached_img"] = np.array(img)
+                    obj["_cached_scale"] = size
+                    obj["_cached_angle"] = angle
+                    
+                
+                img_np = obj["_cached_img"]
+                if img_np is None:
+                    continue
 
-        size = int(BASE_SIZE * obj.get("scale", 1.0))
-        img = obj["img"].resize((size, size), Image.Resampling.LANCZOS)
+                h, w = img_np.shape[:2]
+                x = int(obj["pos"][0] - w // 2)
+                y = int(obj["pos"][1] - h // 2)
 
-        if obj.get("current_angle", 0.0) != 0:
-            img = img.rotate(obj["current_angle"], expand=True, resample=Image.Resampling.BILINEAR)
-
-        img_np = np.array(img)
-
-        h, w = img_np.shape[:2]
-        x = int(obj["pos"][0] - w // 2)
-        y = int(obj["pos"][1] - h // 2)
-
-        out = overlay_image_alpha(out, img_np, x, y, obj.get("alpha", 1.0))
+                out = overlay_image_alpha(out, img_np, x, y, obj.get("alpha", 1.0))
 
         # highlight grabbed
-        if obj.get("grabbed", False):
-            cv2.circle(
-                out,
-                (int(obj["pos"][0]), int(obj["pos"][1])),
-                max(6, size // 6),
-                (255, 255, 255),
-                2,
-            )
+                if obj.get("grabbed", False):
+                    cv2.circle(
+                        out,
+                        (int(obj["pos"][0]), int(obj["pos"][1])),
+                        max(6, size // 6),
+                        (255, 255, 255),
+                        2,
+                    )
 
-    return out
+            return out
 
 #  render_slots
 
@@ -82,8 +119,11 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
         y2 = sy + SLOT_H // 2
 
         # slot outline
-        cv2.rectangle(out, (x1, y1), (x2, y2), (220, 220, 220), 1)
-
+        cv2.rectangle(out, (x1, y1), (x2, y2), (55, 55, 55), -1)
+        cv2.rectangle(out, (x1, y1), (x2, y2), (200, 200, 200), 2)
+        
+        cv2.rectangle(out,(x1+4,y1+4),(x2+4,y2+4),(30,30,30),-1)
+        
         # glow
         glow = s.get("glow", 0.0)
         if glow > 0.01:
@@ -121,36 +161,32 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
 
     return out
 
-# render 
+#lab_table
 
-def render_platform_base(out, H):
-    """
-    Draws the lab table at a fixed screen-relative position.
-    """
-    h, w = out.shape[:2]
-
-    # Platform position (relative to screen)
-    platform_height = 220
-    top = int(H * 0.62)
-    bottom = top + platform_height
-    left = int(w * 0.1)
-    right = int(w * 0.9)
-
-    overlay = out.copy()
-
-    cv2.rectangle(
-        overlay,
-        (left, top),
-        (right, bottom),
-        (60, 60, 60),  # lab table gray
-        -1,
-    )
-
-    # subtle blend (now that it's confirmed)
-    out = cv2.addWeighted(overlay, 0.45, out, 0.55, 0)
+def render_platform_base(frame,desk_img,H):
+    out = frame.copy()
+    if desk_img is None:
+        return out
+    
+    dh,dw=desk_img.shape[:2]
+    
+    target_h=int(H*0.30)
+    
+    scale = target_h/dh
+    new_w = int(dw*scale)
+    new_h = target_h
+    
+    desk=cv2.resize(desk_img, (new_w, new_h))
+    y =H-new_h
+    
+    x=(out.shape[1]-new_w)//2
+    
+    if desk.shape[2]==4:
+        out=overlay_image_alpha(out,desk,x,y)
+    else:
+        out[y:y+new_h, x:x+new_w]=desk
+    
     return out
-
-
 
 # render_toolbar 
 def render_toolbar(out, toolbar_img, y=0):

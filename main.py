@@ -10,38 +10,56 @@ import time
 import math
 from collections import deque
 import numpy as np
+
 import cv2
 from PIL import Image, ImageDraw
 import mediapipe as mp
+import core.asset_manager
+print(core.asset_manager.__file__)
+
 
 from config import (
-    RIBBON_H, ICON_SIZE, TOOL_SPACING, SPAWN_COOLDOWN,
     BASE_SIZE,
-    SLOT_COUNT, SLOT_W, SLOT_H, SLOT_Y, SLOT_SPACING,
-    GRAVITY,
-    REACTION_DURATION, SMOKE_PARTICLES,
-    FLAME_SPEED, FLAME_SCALE, FLAME_OFFSET_Y,
+    SLOT_COUNT,
+    SLOT_H,
+    SLOT_SPACING,
+    SLOT_W,
+    SLOT_Y,
+
+from core.asset_manager import AssetManager
+from lab_platform import create_slots
+from objects import make_objects
+from render.renderer import(
+    render_burner_flames,
+    render_particles,
+    render_platform_base,
+    render_slots,
+    render_toolbar,
+    render_world,
 )
 
-from utils import clamp, lerp, distance
-from tools import TOOLS, load_tool_image
-from objects import make_object
-from lab_platform import create_slots
-from reactions import trigger_reaction
-from ui_toolbar import draw_ribbon, handle_ribbon_interaction
-from systems.physics_system import update as physics_update
-from systems.motion_system import update as motion_update
-from systems.particle_systems import update as particle_update ,spawn_smoke
 from systems.grab_system import update as grab_update
-from render.renderer import render_world, render_slots,render_platform_base,render_toolbar,render_burner_flames,render_particles
+from systems.motion_system import update as motion_update
+from systems.particle_systems import spawn_smoke, update as particle_update
+from systems.physics_system import update as physics_interaction
+from ui_toolbar import draw_ribbon, handle_ribbon_interaction      
+from utils import distance  
+
+
+
+assets = AssetManager()
+assets.load_tool_images()
+assets.load_flame_frames()
+assets.load_desk()
+
+
 
 
 
 # -------------------------------------------------
 # Global state
 # -------------------------------------------------
-hand_holding = {"Left": None, "Right": None}
-ROTATABLE_TOOLS = {"flask", "test_tube"}
+
 
 
 # -------------------------------------------------
@@ -61,6 +79,51 @@ hands_module = mp_hands.Hands(
 WINDOW_NAME = "Virtual Chemistry Lab-1"
 cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+
+def load_frames(folder,prefix, max_count=200):
+    frames=[]
+    for i in range(1,max_count):
+        path = os.path.join(folder,f"{prefix}_{i:02d}.png")
+        if not os.path.exists(path):
+            break
+        frame.append(Image.open(path).convert("RGBA"))
+        return frames
+        
+        
+FLAME_FRAMES =assets.get_flame_frames()
+if not FLAME_FRAMES:
+    FLAME_FRAMES = load_frames("tool_images/flame_frames","flame",300)
+    
+    world_objects = [
+        make_objects("flask",300,220),
+        make_objects("flask",600,220),
+    ]
+    
+    slot_states = create_slots()
+    particles =[]
+    
+    hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
+    prev_time= time.time(
+    
+    
+    
+    def ensure_burner_fields(obj):
+        if obj.get("type") != "burner":
+            return                                
+            
+        if "flame_frames" not in obj:
+            obj["flame_frames"]=FLAME_FRAMES
+            obj["flame_index"]=0
+            obj["flame_timer"]=0.0
+            obj["flame_on"]=False
+            
+    def compute_slot_positions(W,H):
+        center_x=W//2
+        base_y=  
+
+
+
 
 cap = None
 for i in range(6):
@@ -121,7 +184,7 @@ def ensure_burner_fields(obj):
         obj["flame_frames"] = FLAME_FRAMES
         obj["flame_index"] = 0
         obj["flame_timer"] = 0.0
-        obj["flame_on"] = False
+        obj["flame_on"] = False     
 
 
 def compute_slot_positions(W, H):
@@ -195,7 +258,7 @@ try:
                     "angle": math.atan2(mcp_px[1]-wrist_px[1], mcp_px[0]-wrist_px[0]),
                 }
                 
-                grab_update(detected_hands, world_objects)
+                
 
 
         # -------------------------
@@ -215,6 +278,9 @@ try:
         physics_update(world_objects, dt, floor_y)
         motion_update(world_objects,dt,ensure_burner_fields)
         particle_update(particles, dt)
+        
+        
+        compute_slot_positions(W,H)
 
         # -------------------------
         # Rotation & damping
@@ -225,11 +291,14 @@ try:
         # Render (temporary inline)
         # -------------------------
         out = render_world(frame,world_objects,BASE_SIZE)
-        out = render_platform_base(out,H)
+        if out is None:
+            raise RuntimeError("render_world returned None")
+        out = render_platform_base(out,assets.get_desk(),H)
         out = render_slots(out,slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
         out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
         out = render_particles(out,particles)
+        
         cv2.imshow(WINDOW_NAME,out)
         
 
