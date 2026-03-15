@@ -25,10 +25,11 @@ from config import (
     SLOT_SPACING,
     SLOT_W,
     SLOT_Y,
+)
 
 from core.asset_manager import AssetManager
 from lab_platform import create_slots
-from objects import make_objects
+from objects import make_object
 from render.renderer import(
     render_burner_flames,
     render_particles,
@@ -41,7 +42,7 @@ from render.renderer import(
 from systems.grab_system import update as grab_update
 from systems.motion_system import update as motion_update
 from systems.particle_systems import spawn_smoke, update as particle_update
-from systems.physics_system import update as physics_interaction
+from systems.physics_system import update as physics_update
 from ui_toolbar import draw_ribbon, handle_ribbon_interaction      
 from utils import distance  
 
@@ -87,40 +88,40 @@ def load_frames(folder,prefix, max_count=200):
         path = os.path.join(folder,f"{prefix}_{i:02d}.png")
         if not os.path.exists(path):
             break
-        frame.append(Image.open(path).convert("RGBA"))
-        return frames
+        frames.append(Image.open(path).convert("RGBA"))
+    return frames
         
         
 FLAME_FRAMES =assets.get_flame_frames()
 if not FLAME_FRAMES:
     FLAME_FRAMES = load_frames("tool_images/flame_frames","flame",300)
     
-    world_objects = [
-        make_objects("flask",300,220),
-        make_objects("flask",600,220),
-    ]
+    #world_objects = [
+    #     make_objects("flask",300,220),
+    #     make_objects("flask",600,220),
+    # ]
     
-    slot_states = create_slots()
-    particles =[]
+    # slot_states = create_slots()
+    # particles =[]
     
-    hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
-    prev_time= time.time(
+    # hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
+    # prev_time= time.time
     
     
     
-    def ensure_burner_fields(obj):
-        if obj.get("type") != "burner":
-            return                                
+    # def ensure_burner_fields(obj):
+    #     if obj.get("type") != "burner":
+    #         return                                
             
-        if "flame_frames" not in obj:
-            obj["flame_frames"]=FLAME_FRAMES
-            obj["flame_index"]=0
-            obj["flame_timer"]=0.0
-            obj["flame_on"]=False
+    #     if "flame_frames" not in obj:
+    #         obj["flame_frames"]=FLAME_FRAMES
+    #         obj["flame_index"]=0
+    #         obj["flame_timer"]=0.0
+    #         obj["flame_on"]=False
             
-    def compute_slot_positions(W,H):
-        center_x=W//2
-        base_y=  
+    # def compute_slot_positions(W,H):
+    #     center_x=W//2
+    #     base_y=  
 
 
 
@@ -138,14 +139,14 @@ if cap is None:
 # -------------------------------------------------
 # Assets
 # -------------------------------------------------
-def load_frames(folder, prefix, max_count=200):
-    frames = []
-    for i in range(1, max_count):
-        path = os.path.join(folder, f"{prefix}_{i:02d}.png")
-        if not os.path.exists(path):
-            break
-        frames.append(Image.open(path).convert("RGBA"))
-    return frames
+# def load_frames(folder, prefix, max_count=200):
+    # frames = []
+    # for i in range(1, max_count):
+        # path = os.path.join(folder, f"{prefix}_{i:02d}.png")
+        # if not os.path.exists(path):
+            # break
+        # frames.append(Image.open(path).convert("RGBA"))
+    # return frames
 
 
 FLAME_FRAMES = load_frames("tool_images/flame_frames", "flame", 300)
@@ -155,10 +156,10 @@ DROPLET_FRAMES = load_frames("tool_images/droplet_frames", "drop", 200)
 # -------------------------------------------------
 # World state
 # -------------------------------------------------
-world_objects = [
-    make_object("flask", 300, 220),
-    make_object("flask", 600, 220),
-]
+world_objects = []
+    #make_object("flask", 300, 220),
+    #make_object("flask", 600, 220),
+
 
 slot_states = create_slots()
 droplets = []
@@ -212,6 +213,10 @@ try:
 
         frame = cv2.flip(frame, 1)
         H, W = frame.shape[:2]
+        out = render_world(frame, world_objects, BASE_SIZE)
+        if out is None:
+            raise RuntimeError("render_world returned None")
+        out , table_top_y = render_platform_base(out, assets.get_desk(), H)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         
@@ -221,11 +226,11 @@ try:
         for obj in world_objects:
             if obj.get("type") == "burner" and obj.get("flame_on"):
                 spawn_smoke(
-            particles,
-            obj["pos"][0],
-            obj["pos"][1] - BASE_SIZE // 2 - 30,
-            count=2,
-        )
+                particles,
+                obj["pos"][0],
+                obj["pos"][1] - BASE_SIZE // 2 - 30,
+                count=2,
+            )
 
 
         # -------------------------
@@ -273,7 +278,7 @@ try:
         # -------------------------
         # Physics (gravity only)
         # -------------------------
-        floor_y = H - 80
+        floor_y = table_top_y if table_top_y is not None else (H - 80)
         grab_update(detected_hands,world_objects)
         physics_update(world_objects, dt, floor_y)
         motion_update(world_objects,dt,ensure_burner_fields)
@@ -293,8 +298,8 @@ try:
         out = render_world(frame,world_objects,BASE_SIZE)
         if out is None:
             raise RuntimeError("render_world returned None")
-        out = render_platform_base(out,assets.get_desk(),H)
-        out = render_slots(out,slot_states,SLOT_W,SLOT_H)
+        out, table_top_y = render_platform_base(out,assets.get_desk(),H)
+        #out = render_slots(out,slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
         out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
         out = render_particles(out,particles)

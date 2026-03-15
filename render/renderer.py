@@ -54,12 +54,12 @@ def render_world(frame, world_objects, BASE_SIZE):
             obj["_cached_angle"]=None
             
             
-            scale= obj.get("scale",1.0)
-            angle=obj.get("current_angle",0.0)
-            size =int(BASE_SIZE*scale)
+        scale= obj.get("scale",1.0)
+        angle=obj.get("current_angle",0.0)
+        size =int(BASE_SIZE*scale)
             
-            if (
-                obj["_cached_img"]is None
+        if (
+                obj["_cached_img"] is None
                 or obj["_cached_scale"]!= size
                 or obj["_cached_angle"]!= angle
                 
@@ -70,39 +70,39 @@ def render_world(frame, world_objects, BASE_SIZE):
                 
                 
                 if angle != 0:
-                    img =img.rotate(
+                    img = img.rotate(
                         math.degrees(angle),
                         expand=True,
-                        resampling=Image.Resampling.BILINEAR,
+                        resample=Image.BILINEAR,
                         
                     )
                     
-                    obj["_cached_img"] = np.array(img)
-                    obj["_cached_scale"] = size
-                    obj["_cached_angle"] = angle
-                    
+                obj["_cached_img"] = np.array(img)
+                obj["_cached_scale"] = size
+                obj["_cached_angle"] = angle
                 
-                img_np = obj["_cached_img"]
-                if img_np is None:
-                    continue
+                
+        img_np = obj["_cached_img"]
+        if img_np is None:
+            continue
 
-                h, w = img_np.shape[:2]
-                x = int(obj["pos"][0] - w // 2)
-                y = int(obj["pos"][1] - h // 2)
+        h, w = img_np.shape[:2]
+        x = int(obj["pos"][0] - w // 2)
+        y = int(obj["pos"][1] - h // 2)
 
-                out = overlay_image_alpha(out, img_np, x, y, obj.get("alpha", 1.0))
+        out = overlay_image_alpha(out, img_np, x, y, obj.get("alpha", 1.0))
 
         # highlight grabbed
-                if obj.get("grabbed", False):
-                    cv2.circle(
-                        out,
-                        (int(obj["pos"][0]), int(obj["pos"][1])),
-                        max(6, size // 6),
-                        (255, 255, 255),
-                        2,
-                    )
+        if obj.get("grabbed", False):
+            cv2.circle(
+                out,
+                (int(obj["pos"][0]), int(obj["pos"][1])),
+                max(6, size // 6),
+                (255, 255, 255),
+                2,
+            )
 
-            return out
+    return out
 
 #  render_slots
 
@@ -163,10 +163,10 @@ def render_slots(out, slot_states, SLOT_W, SLOT_H):
 
 #lab_table
 
-def render_platform_base(frame,desk_img,H):
+def render_platform_base(frame, desk_img, H):
     out = frame.copy()
     if desk_img is None:
-        return out
+        return out, None
     
     dh,dw=desk_img.shape[:2]
     
@@ -178,6 +178,7 @@ def render_platform_base(frame,desk_img,H):
     
     desk=cv2.resize(desk_img, (new_w, new_h))
     y =H-new_h
+    table_top_y = y
     
     x=(out.shape[1]-new_w)//2
     
@@ -186,7 +187,7 @@ def render_platform_base(frame,desk_img,H):
     else:
         out[y:y+new_h, x:x+new_w]=desk
     
-    return out
+    return out, table_top_y
 
 # render_toolbar 
 def render_toolbar(out, toolbar_img, y=0):
