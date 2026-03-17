@@ -18,14 +18,13 @@ SPAWN_COOLDOWN = 0.7   # seconds between spawning tools
 # TOOL SCALE CONFIG
 # ------------------------------------------------------------
 
-#TOOL_SCALES = {
-#    "flask": 0.85,
-#   "beaker": 0.9,
-#  "test_tube": 0.7,
-##"dropper": 0.5,
-#}
+# TOOL_SCALES = {
+# "flask": 0.30,
+# "beaker": 0.5,
+# "test_tube": 0.4,
+# "dropper": 0.3,}
 
-#DEFAULT_TOOL_SCALE = 0.8
+DEFAULT_TOOL_SCALE = 0.5
 
 
 BASE_SIZE = 100          # base render size for flask / tools

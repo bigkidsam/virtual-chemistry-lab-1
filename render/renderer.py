@@ -5,8 +5,6 @@ from PIL import Image
 
 
 
-
-
 def overlay_image_alpha(bg, fg, x, y, alpha_mult=1.0):
     """Overlay RGBA fg onto BGR bg."""
     h, w = bg.shape[:2]
@@ -56,7 +54,8 @@ def render_world(frame, world_objects, BASE_SIZE):
             
         scale= obj.get("scale",1.0)
         angle=obj.get("current_angle",0.0)
-        size =int(BASE_SIZE*scale)
+        size = int(BASE_SIZE * scale)
+        obj["_render_size"] = size
             
         if (
                 obj["_cached_img"] is None
@@ -178,7 +177,7 @@ def render_platform_base(frame, desk_img, H):
     
     desk=cv2.resize(desk_img, (new_w, new_h))
     y =H-new_h
-    table_top_y = y
+    table_top_y = y 
     
     x=(out.shape[1]-new_w)//2
     
@@ -285,4 +284,67 @@ def render_particles(out, particles):
                 -1,
             )
 
+    return out
+
+def render_dashboard(out, metrics, W, H):
+    """
+    Draw a stylish Heads-Up Display showing system and lab metrics.
+    """
+    # ----------------------------------------------------
+    # Configuration for HUD
+    # ----------------------------------------------------
+    HUD_W = 280
+    HUD_H = 220
+    HUD_X = W - HUD_W - 10
+    HUD_Y = H - HUD_H - 120  # Hover above the desktop tools
+    
+    # ----------------------------------------------------
+    # Draw Background Panel with Alpha Blending
+    # ----------------------------------------------------
+    overlay = out.copy()
+    
+    # Inner background (dark gray)
+    cv2.rectangle(overlay, (HUD_X, HUD_Y), (HUD_X + HUD_W, HUD_Y + HUD_H), (25, 25, 25), -1)
+    # Header background (dark blue/purple hue)
+    cv2.rectangle(overlay, (HUD_X, HUD_Y), (HUD_X + HUD_W, HUD_Y + 40), (80, 50, 40), -1)
+    
+    alpha = 0.75
+    out = cv2.addWeighted(overlay, alpha, out, 1 - alpha, 0)
+    
+    # Border (solid)
+    cv2.rectangle(out, (HUD_X, HUD_Y), (HUD_X + HUD_W, HUD_Y + HUD_H), (150, 150, 150), 1)
+    
+    
+    # ----------------------------------------------------
+    # Draw Text
+    # ----------------------------------------------------
+    # Header Title
+    cv2.putText(out, "LAB DASHBOARD", (HUD_X + 15, HUD_Y + 28), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+    
+    # Body Texts
+    start_y = HUD_Y + 65
+    line_gap = 25
+    
+    def draw_row(label, value, idx, value_color=(200, 255, 200)):
+        y = start_y + idx * line_gap
+        cv2.putText(out, label, (HUD_X + 15, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1)
+        cv2.putText(out, str(value), (HUD_X + 140, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, value_color, 1)
+
+    # Metrics
+    fps_color = (100, 255, 100) if metrics.get("fps", 0) > 20 else (50, 50, 255)
+    draw_row("System FPS:", f"{metrics.get('fps', 0.0):.1f}", 0, fps_color)
+    
+    draw_row("Actv Tools:", metrics.get("active_tools", 0), 1)
+    
+    burner_status = "ON" if metrics.get("burner_active", False) else "OFF"
+    burner_c = (100, 200, 255) if burner_status == "ON" else (150, 150, 150)
+    draw_row("Burner:", burner_status, 2, burner_c)
+    
+    draw_row("Liquid Vol:", f"{metrics.get('total_volume', 0.0):.1f} mL", 3, (255, 200, 100))
+    
+    draw_row("Hands Vsb:", f"{metrics.get('hands_count', 0)}", 4)
+    
+    draw_row("Left Hand:", f"{metrics.get('left_hand', 'None')}", 5, (200, 200, 200))
+    draw_row("Right Hand:", f"{metrics.get('right_hand', 'None')}", 6, (200, 200, 200))
+    
     return out

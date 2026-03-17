@@ -37,6 +37,7 @@ from render.renderer import(
     render_slots,
     render_toolbar,
     render_world,
+    render_dashboard,
 )
 
 from systems.grab_system import update as grab_update
@@ -303,6 +304,34 @@ try:
         out = render_toolbar(out,toolbar)
         out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
         out = render_particles(out,particles)
+        
+        # -------------------------
+        # Dashboard HUD
+        # -------------------------
+        fps = 1 / dt if dt > 0 else 0
+        
+        hands_count = len(detected_hands)
+        left_hand_str = "None"
+        if "Left" in detected_hands:
+            left_hand_str = "Pinching" if detected_hands["Left"]["pinch"] else "Open"
+            
+        right_hand_str = "None"
+        if "Right" in detected_hands:
+            right_hand_str = "Pinching" if detected_hands["Right"]["pinch"] else "Open"
+            
+        total_vol = sum(sum(c.get("vol", 0) for c in s.get("contents", [])) for s in slot_states)
+        burner_active = any(obj.get("type") == "burner" and obj.get("flame_on", False) for obj in world_objects)
+        
+        metrics = {
+            "fps": fps,
+            "active_tools": len(world_objects),
+            "burner_active": burner_active,
+            "total_volume": total_vol,
+            "hands_count": hands_count,
+            "left_hand": left_hand_str,
+            "right_hand": right_hand_str,
+        }
+        out = render_dashboard(out, metrics, W, H)
         
         cv2.imshow(WINDOW_NAME,out)
         
