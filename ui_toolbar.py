@@ -3,34 +3,25 @@ import numpy as np
 import cv2
 
 from config import (
-    RIBBON_H,
     ICON_SIZE,
     TOOL_SPACING,
     SPAWN_COOLDOWN
 )
 from tools import load_tool_image, TOOLS
-from objects import make_object
+from ui_panels import draw_rounded_rect, draw_alpha_rounded_rect
 
 # Cooldown timer
 last_spawn_time = 0
 
-# Ribbon sections
+# Just a flat Tools list like the image
 SECTIONS = [
-    {"name": "Tools",      "tools": ["flask", "beaker", "test_tube", "dropper"]},
-    {"name": "Containers", "tools": [ "cylinder", "petri"]},
-    {"name": "Heating",    "tools": ["burner"]},
-    {"name": "Mixing",     "tools": ["rod", "spatula"]},
+    {"name": "Tools", "tools": ["beaker", "burner", "petri", "dropper"]},
 ]
 
 TOOL_MAP = {t["id"]: t for t in TOOLS}
 
-
-# -----------------------------------------
-#   Alpha Blending (RGBA over BGR)
-# -----------------------------------------
 def blend_icon(base, icon, x, y):
     h, w = icon.shape[:2]
-
     if x + w <= 0 or y + h <= 0 or x >= base.shape[1] or y >= base.shape[0]:
         return
 
@@ -52,70 +43,58 @@ def blend_icon(base, icon, x, y):
     base[y1:y2, x1:x2] = blended.astype(np.uint8)
 
 
-# -----------------------------------------
-#   Draw Ribbon (MS Paint Style)
-# -----------------------------------------
-def draw_ribbon(W):
-    ribbon = np.zeros((RIBBON_H, W, 3), dtype=np.uint8)
-    ribbon[:] = (35, 35, 35)
-
-    # Bottom shadow line
-    cv2.line(ribbon, (0, RIBBON_H - 2), (W, RIBBON_H - 2), (70, 70, 70), 2)
-
-    # 1️⃣ Compute total width of all groups
-    section_blocks = []
-    for sec in SECTIONS:
-        icons_width = len(sec["tools"]) * (ICON_SIZE + TOOL_SPACING)
-        block_width = 4 + icons_width + 15
-        section_blocks.append((sec, block_width))
-
-    total_width = sum(w for (_, w) in section_blocks)
-
-    # Center ribbon
-    x = (W - total_width) // 2
-    y_icon = 22
-
+def draw_toolbar_bottom(out, W, H):
+    """Draws the dark glossy Toolbar at the bottom, mimicking the mockup."""
+    toolbar_w = 480
+    toolbar_h = 100
+    x = (W - toolbar_w) // 2
+    y = H - toolbar_h - 20
+    
+    # Title "Tools" sitting right on top margin
+    title = "Tools"
+    (tw, th), _ = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+    cv2.putText(out, title, (x + (toolbar_w - tw)//2, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    cv2.line(out, (x, y - 15), (x + (toolbar_w - tw)//2 - 10, y - 15), (100, 100, 100), 2)
+    cv2.line(out, (x + (toolbar_w + tw)//2 + 10, y - 15), (x + toolbar_w, y - 15), (100, 100, 100), 2)
+    
     icon_positions = []
+    
+    # Calculate spacing
+    sec = SECTIONS[0]
+    total_tools = len(sec["tools"])
+    total_icons_width = total_tools * ICON_SIZE + (total_tools - 1) * 30
+    start_x = x + (toolbar_w - total_icons_width) // 2
+    
+    ix = start_x
+    iy = y + 10
+    
+    for tool_id in sec["tools"]:
+        tool_info = TOOL_MAP[tool_id]
+        
+        # Tool card
+        draw_rounded_rect(out, (ix - 10, iy - 10), (ix + ICON_SIZE + 10, iy + ICON_SIZE + 35), (20, 15, 10), fill=True, radius=5)
+        draw_rounded_rect(out, (ix - 10, iy - 10), (ix + ICON_SIZE + 10, iy + ICON_SIZE + 35), (80, 50, 30), thickness=1, radius=5)
 
-    # 2️⃣ Draw Groups
-    for sec, block_width in section_blocks:
+        img = load_tool_image(tool_id).resize((ICON_SIZE, ICON_SIZE))
+        icon_np = np.array(img)
 
-        # Group Name
-        cv2.putText(ribbon, sec["name"], (x, 15),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230,230,230), 1)
+        blend_icon(out, icon_np, ix, iy)
+        
+        # Label underneath
+        label = tool_info["name"]
+        (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+        lx = ix + (ICON_SIZE - lw) // 2
+        cv2.putText(out, label, (lx, iy + ICON_SIZE + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
 
-        x2 = x + 10  # offset for icons
+        icon_positions.append((ix - 10, iy - 10, ICON_SIZE + 20, ICON_SIZE + 45, tool_info))
+        ix += ICON_SIZE + 30
 
-        # Icons
-        for tool_id in sec["tools"]:
-            tool_info = TOOL_MAP[tool_id]
-
-            img = load_tool_image(tool_id).resize((ICON_SIZE, ICON_SIZE))
-            icon_np = np.array(img)
-
-            blend_icon(ribbon, icon_np, x2, y_icon)
-
-            cv2.rectangle(
-                ribbon,
-                (x2, y_icon),
-                (x2 + ICON_SIZE, y_icon + ICON_SIZE),
-                (200, 200, 200),
-                1
-            )
-
-            icon_positions.append((x2, y_icon, tool_info))
-            x2 += ICON_SIZE + TOOL_SPACING
-
-        # Move to next section
-        x += block_width
-
-    return ribbon, icon_positions
+    return out, icon_positions
 
 
-# -----------------------------------------
-#   Interaction
-# -----------------------------------------
 def handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects):
+    """Check clicks for bottom toolbar."""
+    from objects import make_object
     global last_spawn_time
 
     now = time.time()
@@ -123,23 +102,17 @@ def handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_object
         return False
 
     for label, hand in detected_hands.items():
-        ix, iy = int(hand["index"][0]), int(hand["index"][1])
+        hx, hy = int(hand["index"][0]), int(hand["index"][1])
 
-        # Must be touching ribbon area
-        if iy > RIBBON_H:
-            continue
-
-        # Check each icon
-        for (x, y, tool_info) in icon_positions:
-            if x <= ix <= x + ICON_SIZE and y <= iy <= y + ICON_SIZE:
-
+        # Check each icon card
+        for (rx, ry, rw, rh, tool_info) in icon_positions:
+            if rx <= hx <= rx + rw and ry <= hy <= ry + rh:
                 # Spawn tool exactly at center
                 world_objects.append(
                     make_object(tool_info["id"], W // 2, int(H * 0.40))
                 )
-
                 last_spawn_time = now
-                print(f"[SPAWN] {tool_info['name']}")
+                print(f"[UI] Spawned {tool_info['name']}")
                 return True
 
     return False
