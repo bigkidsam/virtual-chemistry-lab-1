@@ -295,10 +295,10 @@ try:
         # -------------------------
         # Render (temporary inline)
         # -------------------------
-        out = render_world(frame,world_objects,BASE_SIZE)
-        if out is None:
-            raise RuntimeError("render_world returned None")
-        out, table_top_y = render_platform_base(out,assets.get_desk(),H)
+        # out = render_world(frame,world_objects,BASE_SIZE)
+        # if out is None:
+        #     raise RuntimeError("render_world returned None")
+        # out, table_top_y = render_platform_base(out,assets.get_desk(),H)
         #out = render_slots(out,slot_states,SLOT_W,SLOT_H)
         out = render_toolbar(out,toolbar)
         out = render_burner_flames(out,world_objects, dt,BASE_SIZE)
