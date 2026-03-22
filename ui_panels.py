@@ -90,8 +90,7 @@ def render_top_bar(out, W, H):
     draw_rounded_rect(out, (rx + 90, 15), (rx + 170, 45), (40, 25, 15), radius=5, fill=True)
     draw_rounded_rect(out, (rx + 90, 15), (rx + 170, 45), (100, 60, 20), thickness=1, radius=5, fill=False)
     cv2.putText(out, "Pause", (rx + 105, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
-    
-    return out
+    return out, {"reset": (rx, 15, 80, 30), "pause": (rx + 90, 15, 80, 30)}
 
 def render_left_panel(out, W, H):
     """Draws the Left Chemical Cards panel."""
@@ -245,21 +244,41 @@ def render_right_panel(out, W, H):
 def point_in_rect(px, py, rx, ry, rw, rh):
     return rx <= px <= rx + rw and ry <= py <= ry + rh
 
-def handle_panels_interaction(detected_hands, chem_buttons, world_objects, W, H):
-    """Checks clicks for the Add buttons on the Chemical Cards."""
+def handle_panels_interaction(detected_hands, chem_buttons, top_bar_buttons, world_objects, W, H, slot_states=[], particles=[]):
+    """Checks clicks for the Add buttons and top bar buttons."""
     from objects import make_object
     
     now = time.time()
     if now - ui_state["last_interaction_time"] < 0.8:
-        return
+        return False # False indicates no pause toggle
         
     for label, hand in detected_hands.items():
         ix, iy = int(hand["index"][0]), int(hand["index"][1])
         
+        # Check Top Bar Commands
+        if top_bar_buttons:
+            rx, ry, rw, rh = top_bar_buttons.get("reset", (0,0,0,0))
+            if point_in_rect(ix, iy, rx, ry, rw, rh) and hand.get("pinch"):
+                # Reset logic
+                world_objects.clear()
+                for slot in slot_states:
+                    slot["contents"] = []
+                    slot["glow"] = 0.0
+                particles.clear()
+                ui_state["last_interaction_time"] = now
+                print("[UI] Simulation Reset")
+                return False
+
+            px, py, pw, ph = top_bar_buttons.get("pause", (0,0,0,0))
+            if point_in_rect(ix, iy, px, py, pw, ph) and hand.get("pinch"):
+                ui_state["last_interaction_time"] = now
+                print("[UI] Simulation Paused Toggled")
+                return True # Signal a toggle of pause
+                
         # Check Add Buttons
         for btn in chem_buttons:
             rx, ry, rw, rh = btn["rect"]
-            if point_in_rect(ix, iy, rx, ry, rw, rh):
+            if point_in_rect(ix, iy, rx, ry, rw, rh) and hand.get("pinch"):
                 chem = btn["data"]
                 
                 # Spawn a dropper filled with chemical
@@ -271,4 +290,6 @@ def handle_panels_interaction(detected_hands, chem_buttons, world_objects, W, H)
                 world_objects.append(new_dropper)
                 ui_state["last_interaction_time"] = now
                 print(f"[UI] Spawned dropper with {chem['name']}")
-                return
+                return False
+                
+    return False

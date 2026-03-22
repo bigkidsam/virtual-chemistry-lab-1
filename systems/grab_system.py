@@ -1,7 +1,7 @@
 import numpy as np
 from utils import distance_sq
 
-GRAB_RADIUS = 140 * 140  # bigger = easier grabbing
+GRAB_RADIUS = 280 * 280  # bigger = easier grabbing on 720p HD frame
 
 
 def try_grab(obj, hand, label):

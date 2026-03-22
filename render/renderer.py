@@ -176,8 +176,8 @@ def render_platform_base(frame, desk_img, H):
     new_h = target_h
     
     desk=cv2.resize(desk_img, (new_w, new_h))
-    y =H-new_h
-    table_top_y = y 
+    y = H - new_h - 100
+    table_top_y = y + int(new_h * 0.4)
     
     x=(out.shape[1]-new_w)//2
     

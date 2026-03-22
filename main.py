@@ -42,7 +42,7 @@ from render.renderer import(
 
 from systems.grab_system import update as grab_update
 from systems.motion_system import update as motion_update
-from systems.particle_systems import spawn_smoke, update as particle_update
+from systems.particle_systems import spawn_smoke, spawn_droplet, update as particle_update
 from systems.physics_system import update as physics_update
 from ui_toolbar import draw_toolbar_bottom, handle_ribbon_interaction   
 from ui_panels import render_top_bar, render_left_panel, render_right_panel, handle_panels_interaction, draw_rounded_rect   
@@ -172,6 +172,7 @@ hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
 pinch_prev = {"Left": False, "Right": False}
 
 prev_time = time.time()  
+global_paused = False
 
 
 
@@ -214,6 +215,10 @@ try:
             continue
 
         frame = cv2.flip(frame, 1)
+        
+        # Upscale frame to 720p HD so our advanced layout has room to breathe on small webcams!
+        frame = cv2.resize(frame, (1280, 720))
+        
         H, W = frame.shape[:2]
         out = render_world(frame, world_objects, BASE_SIZE)
         if out is None:
@@ -258,13 +263,47 @@ try:
                 buf.append(wrist_px)
                 smooth_wrist = np.mean(buf, axis=0)
 
+                pinch_threshold = int(W * 0.06)  # ~76px
                 detected_hands[label] = {
                     "wrist": smooth_wrist,
                     "index": index_px,
-                    "pinch": distance(index_px, thumb_px) < 40,
+                    "pinch": distance(index_px, thumb_px) < pinch_threshold,
                     "angle": math.atan2(mcp_px[1]-wrist_px[1], mcp_px[0]-wrist_px[0]),
                 }
                 
+        # -------------------------
+        # Two-Hand Dropper Logic
+        # -------------------------
+        grabbed_dropper = None
+        for obj in world_objects:
+            if obj.get("type") == "dropper" and obj.get("grabbed"):
+                grabbed_dropper = obj
+                break
+                
+        if grabbed_dropper:
+            grabber_label = grabbed_dropper["grabbed_by"]
+            for label, hand in detected_hands.items():
+                if label != grabber_label and hand["pinch"] and not pinch_prev.get(label, False):
+                    color = grabbed_dropper.get("chem_color", (200, 200, 200))
+                    angle = grabbed_dropper.get("current_angle", 0)
+                    size = grabbed_dropper.get("_render_size", BASE_SIZE)
+                    
+                    # Compute tip of the dropper
+                    dx = math.sin(-angle) * (size // 2 - 10)
+                    
+                    dy = math.cos(-angle) * (size // 2 - 10)
+                    
+                    drop_x = grabbed_dropper["pos"][0] + dx
+                    drop_y = grabbed_dropper["pos"][1] + dy
+                    
+                    # spawn droplet
+                    spawn_droplet(particles, drop_x, drop_y, color)
+                    print(f"[ACTION] Spawned droplet from {label} hand pinch")
+                    break
+
+        # Update pinch_prev
+        for label, hand in detected_hands.items():
+            pinch_prev[label] = hand["pinch"]
                 
 
 
@@ -282,9 +321,11 @@ try:
         # -------------------------
         floor_y = table_top_y if table_top_y is not None else (H - 80)
         grab_update(detected_hands,world_objects)
-        physics_update(world_objects, dt, floor_y)
-        motion_update(world_objects,dt,ensure_burner_fields)
-        particle_update(particles, dt)
+        
+        if not global_paused:
+            physics_update(world_objects, dt, floor_y)
+            motion_update(world_objects,dt,ensure_burner_fields)
+            particle_update(particles, dt)
         
         
         compute_slot_positions(W,H)
@@ -297,11 +338,15 @@ try:
         # -------------------------
         # Render
         # -------------------------
-        # Center simulation box border
-        sim_w = W - 340 - 320 - 80
-        sim_h = H - 200
-        sim_x = 360
+        # Dynamically map simulation box to avoid Left and Right panel spaces
+        left_panel_w = max(260, int(W * 0.22))
+        right_panel_w = max(280, int(W * 0.25))
+        
+        sim_x = 20 + left_panel_w + 30
+        sim_w = W - 20 - right_panel_w - sim_x - 30
         sim_y = 80
+        sim_h = H - 200
+        
         draw_rounded_rect(out, (sim_x, sim_y), (sim_x + sim_w, sim_y + sim_h), (180, 140, 80), thickness=2, radius=10, fill=False)
         cv2.putText(out, "Lab Simulation", (sim_x + (sim_w - 150)//2, sim_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         
@@ -312,10 +357,15 @@ try:
         out = render_particles(out, particles)
         
         # UI overlays
-        out = render_top_bar(out, W, H)
+        out, top_bar_buttons = render_top_bar(out, W, H)
         out, chem_buttons = render_left_panel(out, W, H)
         out = render_right_panel(out, W, H)
-        handle_panels_interaction(detected_hands, chem_buttons, world_objects, W, H)
+        if global_paused:
+            cv2.putText(out, "PAUSED", (W//2 - 60, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (50, 50, 255), 3)
+            
+        toggled = handle_panels_interaction(detected_hands, chem_buttons, top_bar_buttons, world_objects, W, H, slot_states, particles)
+        if toggled:
+            global_paused = not global_paused
         
         cv2.imshow(WINDOW_NAME, out)
         
