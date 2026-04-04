@@ -23,6 +23,7 @@ interface UseHandGestureReturn {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   overlayCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   handDataRef: React.RefObject<HandData[]>;
+  errorMsg: string | null;
 }
 
 const PINCH_THRESHOLD = 0.07; // normalized distance
@@ -30,6 +31,7 @@ const PINCH_THRESHOLD = 0.07; // normalized distance
 export function useHandGesture(): UseHandGestureReturn {
   const [cameraActive, setCameraActive] = useState(false);
   const [handData, setHandData] = useState<HandData[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -61,8 +63,12 @@ export function useHandGesture(): UseHandGestureReturn {
           minTrackingConfidence: 0.5,
         });
         if (!cancelled) landmarkerRef.current = lm;
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("[HandGesture] Failed to load MediaPipe:", err);
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : String(err);
+          setErrorMsg(`MediaPipe Load Error: ${message}`);
+        }
       }
     }
     loadModel();
@@ -70,7 +76,7 @@ export function useHandGesture(): UseHandGestureReturn {
   }, []);
 
   /* ---------- Detection loop ---------- */
-  const detect = useCallback(() => {
+  const detect = useCallback(function detectFrame() {
     if (!activeRef.current) return;
 
     const video = videoRef.current;
@@ -82,11 +88,12 @@ export function useHandGesture(): UseHandGestureReturn {
       
       const parsed: HandData[] = [];
 
-      if (result.landmarks && result.handedness) {
-        result.landmarks.forEach((landmarks: any, i: number) => {
-          const handedness = result.handedness[i];
+      const handednessList = result.handedness;
+      if (result.landmarks && handednessList) {
+        result.landmarks.forEach((landmarks, i: number) => {
+          const handedness = handednessList[i];
           const rawLabel = handedness?.[0]?.categoryName ?? "Right";
-          const label = rawLabel === "Left" ? "Right" : "Left" as "Left" | "Right";
+          const label: HandData["label"] = rawLabel === "Left" ? "Right" : "Left";
 
           const wrist = landmarks[0];
           const indexTip = landmarks[8];
@@ -102,7 +109,11 @@ export function useHandGesture(): UseHandGestureReturn {
             indexTip: { x: indexTip.x, y: indexTip.y },
             thumbTip: { x: thumbTip.x, y: thumbTip.y },
             pinching: dist < PINCH_THRESHOLD,
-            landmarks: landmarks.map((l: any) => ({ x: l.x, y: l.y, z: l.z })),
+            landmarks: landmarks.map((landmark) => ({
+              x: landmark.x,
+              y: landmark.y,
+              z: landmark.z,
+            })),
           });
         });
       }
@@ -173,27 +184,41 @@ export function useHandGesture(): UseHandGestureReturn {
       }
     }
 
-    rafRef.current = requestAnimationFrame(detect);
+    rafRef.current = requestAnimationFrame(detectFrame);
   }, []);
 
   /* ---------- Start / stop camera ---------- */
   const startCamera = useCallback(async () => {
+    setErrorMsg(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: "user" },
+        video: { facingMode: "user" },
         audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.onloadedmetadata = () => {
+           const playPromise = videoRef.current?.play();
+           if (playPromise !== undefined) {
+             playPromise.catch((err: unknown) => {
+               const message = err instanceof Error ? err.message : String(err);
+               const name = err instanceof Error ? err.name : "UnknownError";
+               if (name !== "AbortError") {
+                 console.error("Video play error:", err);
+                 setErrorMsg(`Video play error: ${message}`);
+               }
+             });
+           }
+        };
       }
       activeRef.current = true;
       rafRef.current = requestAnimationFrame(detect);
       setCameraActive(true);
-    } catch (err) {
-      console.error("[HandGesture] Camera access denied:", err);
-      alert("Camera permission denied. Please allow camera access and try again.");
+    } catch (err: unknown) {
+      console.error("[HandGesture] Camera access denied or failed:", err);
+      const message = err instanceof Error ? err.message || err.name : String(err);
+      setErrorMsg(`Camera access failed: ${message}`);
     }
   }, [detect]);
 
@@ -223,5 +248,5 @@ export function useHandGesture(): UseHandGestureReturn {
     };
   }, []);
 
-  return { handData, cameraActive, toggleCamera, videoRef, overlayCanvasRef, handDataRef };
+  return { handData, cameraActive, toggleCamera, videoRef, overlayCanvasRef, handDataRef, errorMsg };
 }

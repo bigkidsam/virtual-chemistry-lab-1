@@ -5,16 +5,31 @@ import TopBar from "./components/TopBar";
 import LeftPanel, { type Chemical } from "./components/LeftPanel";
 import RightPanel, { type ReactionState } from "./components/RightPanel";
 import BottomToolbar, { type Tool } from "./components/BottomToolbar";
-import LabSimulation, { type WorldObject } from "./components/LabSimulation";
+import LabSimulation, {
+  type LabSimulationHandle,
+  type WorldObject,
+} from "./components/LabSimulation";
 import ToastContainer, { type Toast } from "./components/Toast";
-import { useHandGesture } from "./hooks/useHandGesture";
+import { useCamera } from "./hooks/useCamera";
 
 let toastCounter = 0;
 
 export default function Home() {
   const [paused, setPaused] = useState(false);
   const [objects, setObjects] = useState<WorldObject[]>([]);
-  const { handData, cameraActive, toggleCamera, videoRef, overlayCanvasRef, handDataRef } = useHandGesture();
+  const labRef = useRef<LabSimulationHandle>(null);
+  const {
+    handData,
+    cameraActive,
+    cameraMode,
+    toggleCamera,
+    videoRef,
+    overlayCanvasRef,
+    handDataRef,
+    bridgeFrameUrl,
+    errorMsg,
+    statusMsg,
+  } = useCamera();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [reaction, setReaction] = useState<ReactionState>({
     equation: "No active reaction",
@@ -36,7 +51,7 @@ export default function Home() {
 
   /* ---- Handlers ---- */
   const handleReset = useCallback(() => {
-    (LabSimulation as any)._resetObjects?.();
+    labRef.current?.resetObjects();
     setObjects([]);
     setReaction({
       equation: "No active reaction",
@@ -57,11 +72,8 @@ export default function Home() {
   }, [addToast]);
 
   const handleSpawnTool = useCallback((tool: Tool) => {
-    (LabSimulation as any)._spawnObject?.(tool.id, tool.emoji, tool.name);
-    setObjects((prev) => {
-      const updated = [...prev, {} as WorldObject]; // trigger count update
-      return updated;
-    });
+    labRef.current?.spawnObject(tool.id, tool.emoji, tool.name);
+
     addToast(tool.emoji, `${tool.name} added to lab`);
   }, [addToast]);
 
@@ -71,8 +83,8 @@ export default function Home() {
       h2so4: "🩶", kcl: "🪨", ethanol: "💚",
     };
     const emoji = emojiMap[chem.id] ?? "💧";
-    (LabSimulation as any)._spawnObject?.("dropper", emoji, chem.name, chem);
-    setObjects((prev) => [...prev, {} as WorldObject]);
+    labRef.current?.spawnObject("dropper", emoji, chem.name, chem);
+
     addToast(emoji, `${chem.fullName} dropper added`);
   }, [addToast]);
 
@@ -114,8 +126,9 @@ export default function Home() {
 
       <LeftPanel onAddChemical={handleAddChemical} />
 
-      <div style={{ gridArea: "sim", position: "relative", overflow: "hidden" }}>
+      <div style={{ gridArea: "sim", position: "relative", overflow: "hidden", background: cameraActive ? "transparent" : "var(--bg-deep)" }}>
         <LabSimulation
+          ref={labRef}
           paused={paused}
           objects={objects}
           onObjectsChange={handleObjectsChange}
@@ -123,10 +136,18 @@ export default function Home() {
           handDataRef={handDataRef}
           handData={handData}
           cameraActive={cameraActive}
-          toggleCamera={toggleCamera}
           videoRef={videoRef}
           overlayCanvasRef={overlayCanvasRef}
+          bridgeFrameUrl={bridgeFrameUrl}
         />
+
+        {/* Camera Error Display */}
+        {errorMsg && (
+          <div style={{ position:"absolute", top:"20%", left:"50%", transform:"translateX(-50%)", zIndex:999, textAlign:"center", padding:"16px", background:"rgba(244,63,94,0.95)", border:"2px solid #fff", borderRadius:"8px", color:"white", maxWidth:"80%", boxShadow:"0 4px 20px rgba(244,63,94,0.5)" }}>
+            <strong style={{ fontSize: "16px", display: "block", marginBottom: "8px" }}>⚠️ Camera Error</strong>
+            <span style={{ fontSize: "14px", fontFamily: "monospace", wordBreak: "break-all" }}>{errorMsg}</span>
+          </div>
+        )}
 
         {/* Empty state hint */}
         {objects.length === 0 && !paused && (
@@ -170,13 +191,16 @@ export default function Home() {
       <button
         className={`camera-toggle-btn ${cameraActive ? "active" : ""}`}
         onClick={toggleCamera}
-        title={cameraActive ? "Disable hand gestures" : "Enable hand gestures (camera)"}
+        title={cameraActive ? "Turn off camera & gestures" : "Turn on camera & gestures"}
         style={{ position: "absolute", bottom: "124px", left: "280px", zIndex: 9999 }}
       >
         <span className="cam-icon">{cameraActive ? "📷" : "📷"}</span>
-        <span className="cam-label">{cameraActive ? "Gestures ON" : "Gestures OFF"}</span>
+        <span className="cam-label">{cameraActive ? statusMsg : "Camera OFF"}</span>
         {cameraActive && handData.length > 0 && (
           <span className="cam-badge">{handData.length} ✋</span>
+        )}
+        {cameraActive && (
+          <span className="cam-mode-badge">{cameraMode === "bridge" ? "PYTHON" : "BROWSER"}</span>
         )}
       </button>
 

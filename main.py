@@ -48,8 +48,17 @@ from ui_toolbar import draw_toolbar_bottom, handle_ribbon_interaction
 from ui_panels import render_top_bar, render_left_panel, render_right_panel, handle_panels_interaction, draw_rounded_rect   
 from utils import distance  
 from systems.audio_system import detector
+from bridge_server import (
+    publish_bridge_frame,
+    publish_bridge_state,
+    start_bridge_server,
+    stop_bridge_server,
+)
+
+BRIDGE_ONLY = os.environ.get("BRIDGE_ONLY", "1") == "1"
 
 detector.start()
+bridge_running = start_bridge_server()
 
 assets = AssetManager()
 assets.load_tool_images()
@@ -81,120 +90,9 @@ hands_module = mp_hands.Hands(
 # Window + Camera
 # -------------------------------------------------
 WINDOW_NAME = "Virtual Chemistry Lab-1"
-cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
-cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-
-def load_frames(folder,prefix, max_count=200):
-    frames=[]
-    for i in range(1,max_count):
-        path = os.path.join(folder,f"{prefix}_{i:02d}.png")
-        if not os.path.exists(path):
-            break
-        frames.append(Image.open(path).convert("RGBA"))
-    return frames
-        
-        
-FLAME_FRAMES =assets.get_flame_frames()
-if not FLAME_FRAMES:
-    FLAME_FRAMES = load_frames("tool_images/flame_frames","flame",300)
-    
-    #world_objects = [
-    #     make_objects("flask",300,220),
-    #     make_objects("flask",600,220),
-    # ]
-    
-    # slot_states = create_slots()
-    # particles =[]
-    
-    # hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
-    # prev_time= time.time
-    
-    
-    
-    # def ensure_burner_fields(obj):
-    #     if obj.get("type") != "burner":
-    #         return                                
-            
-    #     if "flame_frames" not in obj:
-    #         obj["flame_frames"]=FLAME_FRAMES
-    #         obj["flame_index"]=0
-    #         obj["flame_timer"]=0.0
-    #         obj["flame_on"]=False
-            
-    # def compute_slot_positions(W,H):
-    #     center_x=W//2
-    #     base_y=  
-
-
-
-
-cap = None
-for i in range(6):
-    cam = cv2.VideoCapture(i)
-    if cam.isOpened():
-        cap = cam
-        break
-if cap is None:
-    raise RuntimeError("No camera found")
-
-
-# -------------------------------------------------
-# Assets
-# -------------------------------------------------
-# def load_frames(folder, prefix, max_count=200):
-    # frames = []
-    # for i in range(1, max_count):
-        # path = os.path.join(folder, f"{prefix}_{i:02d}.png")
-        # if not os.path.exists(path):
-            # break
-        # frames.append(Image.open(path).convert("RGBA"))
-    # return frames
-
-
-FLAME_FRAMES = load_frames("tool_images/flame_frames", "flame", 300)
-DROPLET_FRAMES = load_frames("tool_images/droplet_frames", "drop", 200)
-
-
-# -------------------------------------------------
-# World state
-# -------------------------------------------------
-world_objects = []
-    #make_object("flask", 300, 220),
-    #make_object("flask", 600, 220),
-
-
-slot_states = create_slots()
-droplets = []
-
-particles=[]
-
-hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
-pinch_prev = {"Left": False, "Right": False}
-
-prev_time = time.time()  
-global_paused = False
-
-
-
-
-
-# -------------------------------------------------
-# Helpers
-# -------------------------------------------------
-def ensure_burner_fields(obj):
-    if obj.get("type") != "burner":
-        return
-    if "flame_frames" not in obj:
-        obj["flame_frames"] = FLAME_FRAMES
-        obj["flame_index"] = 0
-        obj["flame_timer"] = 0.0
-        obj["flame_on"] = False     
-
-
-def compute_slot_positions(W, H):
-    center_x = W // 2
-    base_y = int(H * SLOT_Y) if SLOT_Y < 1.0 else min(H - 150, int(SLOT_Y))
+if not BRIDGE_ONLY:
+    cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     left = center_x - ((SLOT_COUNT - 1) * SLOT_SPACING) // 2
     for i, s in enumerate(slot_states):
         s["pos"] = np.array([left + i * SLOT_SPACING, base_y], float)
@@ -221,10 +119,8 @@ try:
         frame = cv2.resize(frame, (1280, 720))
         
         H, W = frame.shape[:2]
-        out = render_world(frame, world_objects, BASE_SIZE)
-        if out is None:
-            raise RuntimeError("render_world returned None")
-        out , table_top_y = render_platform_base(out, assets.get_desk(), H)
+        publish_bridge_frame(frame)
+        _, table_top_y = render_platform_base(frame, assets.get_desk(), H)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         
@@ -268,6 +164,7 @@ try:
                 detected_hands[label] = {
                     "wrist": smooth_wrist,
                     "index": index_px,
+                    "thumb": thumb_px,
                     "pinch": distance(index_px, thumb_px) < pinch_threshold,
                     "angle": math.atan2(mcp_px[1]-wrist_px[1], mcp_px[0]-wrist_px[0]),
                 }
@@ -329,13 +226,35 @@ try:
                     elif audio_event == "DOUBLE_SNAP":
                         obj["flame_on"] = False
                         print("[ACTION] Burner OFF via double audio snap")
-        # -------------------------
-        # Bottom Toolbar
-        # -------------------------
-        out, icon_positions = draw_toolbar_bottom(out, W, H)
-        handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects)
 
-        # Removed hardcoded flame_on
+        if bridge_running:
+            bridge_hands = []
+            for label, hand in detected_hands.items():
+                wrist = hand["wrist"]
+                index_tip = hand["index"]
+                thumb_tip = hand["thumb"]
+                bridge_hands.append({
+                    "label": label,
+                    "wrist": {
+                        "x": float(wrist[0] / W),
+                        "y": float(wrist[1] / H),
+                    },
+                    "indexTip": {
+                        "x": float(index_tip[0] / W),
+                        "y": float(index_tip[1] / H),
+                    },
+                    "thumbTip": {
+                        "x": float(thumb_tip[0] / W),
+                        "y": float(thumb_tip[1] / H),
+                    },
+                    "pinching": bool(hand["pinch"]),
+                    "landmarks": [],
+                })
+            publish_bridge_state(bridge_hands, audio_event=audio_event, paused=global_paused)
+
+        if BRIDGE_ONLY:
+            time.sleep(0.001)
+            continue
         # -------------------------
         # Physics (gravity only)
         # -------------------------
@@ -367,22 +286,27 @@ try:
         sim_y = 80
         sim_h = H - 200
         
-        draw_rounded_rect(out, (sim_x, sim_y), (sim_x + sim_w, sim_y + sim_h), (180, 140, 80), thickness=2, radius=10, fill=False)
-        cv2.putText(out, "Lab Simulation", (sim_x + (sim_w - 150)//2, sim_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        
-        # NOTE: render_dashboard is removed to favor Right panel readout.
-        
-        # Tools
+        # World and effects are rendered after physics so the displayed frame
+        # matches the latest simulation state.
+        out = render_world(frame, world_objects, BASE_SIZE)
+        if out is None:
+            raise RuntimeError("render_world returned None")
+        out, _ = render_platform_base(out, assets.get_desk(), H)
         out = render_burner_flames(out, world_objects, dt, BASE_SIZE)
         out = render_particles(out, particles)
+
+        draw_rounded_rect(out, (sim_x, sim_y), (sim_x + sim_w, sim_y + sim_h), (180, 140, 80), thickness=2, radius=10, fill=False)
+        cv2.putText(out, "Lab Simulation", (sim_x + (sim_w - 150)//2, sim_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         
         # UI overlays
         out, top_bar_buttons = render_top_bar(out, W, H)
         out, chem_buttons = render_left_panel(out, W, H)
         out = render_right_panel(out, W, H)
+        out, icon_positions = draw_toolbar_bottom(out, W, H)
         if global_paused:
             cv2.putText(out, "PAUSED", (W//2 - 60, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (50, 50, 255), 3)
             
+        handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects)
         toggled = handle_panels_interaction(detected_hands, chem_buttons, top_bar_buttons, world_objects, W, H, slot_states, particles)
         if toggled:
             global_paused = not global_paused
@@ -397,7 +321,9 @@ try:
             break
 
 finally:
+    stop_bridge_server()
     detector.stop()
     cap.release()
-    cv2.destroyAllWindows()
+    if not BRIDGE_ONLY:
+        cv2.destroyAllWindows()
     hands_module.close()

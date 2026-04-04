@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
-
 /* ======================================================
    DESIGN TOKENS
    ====================================================== */
 :root {
+  --font-sans: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "Consolas", "Courier New", ui-monospace, monospace;
+
   /* Colors */
   --bg-void: #050810;
   --bg-deep: #080c18;
@@ -62,7 +63,7 @@
 html, body {
   height: 100%;
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-void);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -447,9 +448,10 @@ html, body {
    SIMULATION AREA
    ====================================================== */
 .sim-area {
-  grid-area: sim;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
   background:
     radial-gradient(ellipse 80% 60% at 50% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 60%),
     var(--bg-deep);
@@ -1131,3 +1133,16 @@ html, body {
   text-align: center;
   margin-top: 8px;
 }
+
+.cam-mode-badge {
+  background: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-left: 4px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
