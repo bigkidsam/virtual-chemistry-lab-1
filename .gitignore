@@ -1,5 +1,8 @@
-labels
-__pycache__
-venv
-render/_pycache_
-system/_pycache_
+labels/
+__pycache__/
+venv/
+.venv/
+.venv310/
+render/_pycache_/
+system/_pycache_/
+*.log
