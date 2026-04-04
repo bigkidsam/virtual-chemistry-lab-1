@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import type { Chemical } from "./LeftPanel";
 import type { Tool } from "./BottomToolbar";
+import type { HandData } from "../hooks/useHandGesture";
 
 /* =========================================================
    TYPES
@@ -57,6 +58,12 @@ interface LabSimulationProps {
   objects: WorldObject[];
   onObjectsChange: (objs: WorldObject[]) => void;
   onReactionUpdate: (progress: number, temp: number, equation: string, status: "idle" | "reacting" | "complete") => void;
+  handDataRef?: React.RefObject<HandData[]>;
+  handData: HandData[];
+  cameraActive: boolean;
+  toggleCamera: () => void;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  overlayCanvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 /* =========================================================
@@ -100,6 +107,12 @@ export default function LabSimulation({
   objects,
   onObjectsChange,
   onReactionUpdate,
+  handDataRef,
+  handData,
+  cameraActive,
+  toggleCamera,
+  videoRef,
+  overlayCanvasRef,
 }: LabSimulationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -111,6 +124,10 @@ export default function LabSimulation({
   const particlesRef = useRef<Particle[]>([]);
   const slotsRef = useRef<Slot[]>([]);
   const dragRef = useRef<{ id: string; offX: number; offY: number } | null>(null);
+  const handGrabRef = useRef<Record<string, { id: string, offX: number, offY: number, wasPinching: boolean }>>({
+    Left: { id: "", offX: 0, offY: 0, wasPinching: false },
+    Right: { id: "", offX: 0, offY: 0, wasPinching: false }
+  });
   const pausedRef = useRef(paused);
   const sizeRef = useRef({ W: 0, H: 0 });
 
@@ -267,6 +284,75 @@ export default function LabSimulation({
 
     /* --- Physics update --- */
     if (!pausedRef.current) {
+      /* --- Hand Gesture Update --- */
+      if (handDataRef?.current) {
+        for (const hand of handDataRef.current) {
+          const hState = handGrabRef.current[hand.label];
+          if (!hState) continue;
+
+          const px = (1 - hand.indexTip.x) * W;
+          const py = hand.indexTip.y * H;
+
+          if (hand.pinching && !hState.wasPinching) {
+            // Just pinched
+            const otherLabel = hand.label === "Left" ? "Right" : "Left";
+            const otherHState = handGrabRef.current[otherLabel];
+            let actionTriggered = false;
+
+            if (otherHState?.id) {
+              const grabbedObj = objectsRef.current.find(o => o.id === otherHState.id);
+              if (grabbedObj) {
+                if (grabbedObj.type === "dropper" && grabbedObj.chemical) {
+                  spawnDroplet(grabbedObj.x, grabbedObj.y + OBJECT_SIZE / 2, grabbedObj.chemical.color);
+                  actionTriggered = true;
+                } else if (grabbedObj.type === "burner") {
+                  grabbedObj.flameOn = !grabbedObj.flameOn;
+                  actionTriggered = true;
+                }
+              }
+            }
+
+            if (!actionTriggered) {
+              for (let i = objectsRef.current.length - 1; i >= 0; i--) {
+                const obj = objectsRef.current[i];
+                const dist = Math.hypot(obj.x - px, obj.y - py);
+                if (dist < OBJECT_SIZE * 1.5) { // generous grab radius
+                  hState.id = obj.id;
+                  hState.offX = obj.x - px;
+                  hState.offY = obj.y - py;
+                  obj.grabbed = true;
+                  obj.vx = 0;
+                  obj.vy = 0;
+                  break;
+                }
+              }
+            }
+          } else if (hand.pinching && hState.id) {
+            // Dragging
+            const obj = objectsRef.current.find(o => o.id === hState.id);
+            if (obj) {
+              const newX = px + hState.offX;
+              const newY = py + hState.offY;
+              obj.vx = (newX - obj.x) * 15;
+              obj.vy = (newY - obj.y) * 15;
+              obj.x = newX;
+              obj.y = newY;
+            }
+          } else if (!hand.pinching && hState.wasPinching && hState.id) {
+            // Just released
+            const obj = objectsRef.current.find(o => o.id === hState.id);
+            if (obj) {
+              // Only false if not also dragged by mouse or someone else
+              if (dragRef.current?.id !== obj.id) obj.grabbed = false;
+              obj.angularVel = (Math.random() - 0.5) * 0.5;
+            }
+            hState.id = "";
+          }
+
+          hState.wasPinching = hand.pinching;
+        }
+      }
+
       for (const obj of objectsRef.current) {
         if (obj.grabbed) continue;
         obj.vy += GRAVITY * dt;
@@ -567,9 +653,43 @@ export default function LabSimulation({
   };
 
   return (
-    <div className="sim-area" ref={containerRef}>
-      <div className="sim-label">Lab Simulation</div>
-      <div className="sim-border">
+    <div className={`sim-area ${cameraActive ? "has-camera" : ""}`} ref={containerRef}>
+      
+      {/* Augmented Reality Webcam Backdrop */}
+      <div style={{
+        visibility: cameraActive ? "visible" : "hidden",
+        opacity: cameraActive ? 1 : 0,
+        position: "absolute",
+        inset: 0,
+        zIndex: 1,
+        background: "#000",
+        transition: "opacity 0.3s ease"
+      }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)", opacity: 0.7 }}
+        />
+        <canvas
+          ref={overlayCanvasRef}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+        />
+      </div>
+
+      {cameraActive && (
+        <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: "8px", zIndex: 100 }}>
+          {handData.map((h) => (
+            <span key={h.label} className={`hand-tag ${h.pinching ? "pinching" : ""}`}>
+              {h.label} {h.pinching ? "✊" : "🖐"}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="sim-label" style={{ zIndex: 10 }}>Lab Simulation</div>
+      <div className="sim-border" style={{ zIndex: 5 }}>
         <div className="sim-corner tl" />
         <div className="sim-corner tr" />
         <div className="sim-corner bl" />
@@ -583,7 +703,7 @@ export default function LabSimulation({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
-        style={{ cursor: dragRef.current ? "grabbing" : "default" }}
+        style={{ cursor: dragRef.current ? "grabbing" : "default", zIndex: 20 }}
       />
     </div>
   );

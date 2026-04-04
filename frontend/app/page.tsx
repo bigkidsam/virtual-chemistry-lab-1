@@ -7,12 +7,14 @@ import RightPanel, { type ReactionState } from "./components/RightPanel";
 import BottomToolbar, { type Tool } from "./components/BottomToolbar";
 import LabSimulation, { type WorldObject } from "./components/LabSimulation";
 import ToastContainer, { type Toast } from "./components/Toast";
+import { useHandGesture } from "./hooks/useHandGesture";
 
 let toastCounter = 0;
 
 export default function Home() {
   const [paused, setPaused] = useState(false);
   const [objects, setObjects] = useState<WorldObject[]>([]);
+  const { handData, cameraActive, toggleCamera, videoRef, overlayCanvasRef, handDataRef } = useHandGesture();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [reaction, setReaction] = useState<ReactionState>({
     equation: "No active reaction",
@@ -112,13 +114,18 @@ export default function Home() {
 
       <LeftPanel onAddChemical={handleAddChemical} />
 
-      {/* Simulation — relative so paused overlay can be positioned */}
       <div style={{ gridArea: "sim", position: "relative", overflow: "hidden" }}>
         <LabSimulation
           paused={paused}
           objects={objects}
           onObjectsChange={handleObjectsChange}
           onReactionUpdate={handleReactionUpdate}
+          handDataRef={handDataRef}
+          handData={handData}
+          cameraActive={cameraActive}
+          toggleCamera={toggleCamera}
+          videoRef={videoRef}
+          overlayCanvasRef={overlayCanvasRef}
         />
 
         {/* Empty state hint */}
@@ -158,6 +165,20 @@ export default function Home() {
       <RightPanel reaction={reaction} />
 
       <BottomToolbar onSpawnTool={handleSpawnTool} />
+
+      {/* Floating Global Camera Toggle */}
+      <button
+        className={`camera-toggle-btn ${cameraActive ? "active" : ""}`}
+        onClick={toggleCamera}
+        title={cameraActive ? "Disable hand gestures" : "Enable hand gestures (camera)"}
+        style={{ position: "absolute", bottom: "124px", left: "280px", zIndex: 9999 }}
+      >
+        <span className="cam-icon">{cameraActive ? "📷" : "📷"}</span>
+        <span className="cam-label">{cameraActive ? "Gestures ON" : "Gestures OFF"}</span>
+        {cameraActive && handData.length > 0 && (
+          <span className="cam-badge">{handData.length} ✋</span>
+        )}
+      </button>
 
       {/* Toast notifications */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
