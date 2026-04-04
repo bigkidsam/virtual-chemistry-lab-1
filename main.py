@@ -47,8 +47,9 @@ from systems.physics_system import update as physics_update
 from ui_toolbar import draw_toolbar_bottom, handle_ribbon_interaction   
 from ui_panels import render_top_bar, render_left_panel, render_right_panel, handle_panels_interaction, draw_rounded_rect   
 from utils import distance  
+from systems.audio_system import detector
 
-
+detector.start()
 
 assets = AssetManager()
 assets.load_tool_images()
@@ -272,13 +273,15 @@ try:
                 }
                 
         # -------------------------
-        # Two-Hand Dropper Logic
+        # Two-Hand Interaction Logic
         # -------------------------
         grabbed_dropper = None
+        grabbed_burner = None
         for obj in world_objects:
             if obj.get("type") == "dropper" and obj.get("grabbed"):
                 grabbed_dropper = obj
-                break
+            elif obj.get("type") == "burner" and obj.get("grabbed"):
+                grabbed_burner = obj
                 
         if grabbed_dropper:
             grabber_label = grabbed_dropper["grabbed_by"]
@@ -290,7 +293,6 @@ try:
                     
                     # Compute tip of the dropper
                     dx = math.sin(-angle) * (size // 2 - 10)
-                    
                     dy = math.cos(-angle) * (size // 2 - 10)
                     
                     drop_x = grabbed_dropper["pos"][0] + dx
@@ -301,21 +303,39 @@ try:
                     print(f"[ACTION] Spawned droplet from {label} hand pinch")
                     break
 
+        if grabbed_burner:
+            grabber_label = grabbed_burner["grabbed_by"]
+            for label, hand in detected_hands.items():
+                if label != grabber_label and hand["pinch"] and not pinch_prev.get(label, False):
+                    grabbed_burner["flame_on"] = not grabbed_burner.get("flame_on", False)
+                    state = "ON" if grabbed_burner["flame_on"] else "OFF"
+                    print(f"[ACTION] Toggled burner flame {state} from {label} hand pinch")
+                    break
+
         # Update pinch_prev
         for label, hand in detected_hands.items():
             pinch_prev[label] = hand["pinch"]
                 
-
-
+        # -------------------------
+        # Audio Snap Handling
+        # -------------------------
+        audio_event = detector.get_latest_event()
+        if audio_event:
+            for obj in world_objects:
+                if obj.get("type") == "burner":
+                    if audio_event == "SINGLE_SNAP":
+                        obj["flame_on"] = True
+                        print("[ACTION] Burner ON via single audio snap")
+                    elif audio_event == "DOUBLE_SNAP":
+                        obj["flame_on"] = False
+                        print("[ACTION] Burner OFF via double audio snap")
         # -------------------------
         # Bottom Toolbar
         # -------------------------
         out, icon_positions = draw_toolbar_bottom(out, W, H)
         handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_objects)
 
-        for obj in world_objects:
-            if obj.get("type")=="burner":
-                obj["flame_on"] = True
+        # Removed hardcoded flame_on
         # -------------------------
         # Physics (gravity only)
         # -------------------------
@@ -377,6 +397,7 @@ try:
             break
 
 finally:
+    detector.stop()
     cap.release()
     cv2.destroyAllWindows()
     hands_module.close()

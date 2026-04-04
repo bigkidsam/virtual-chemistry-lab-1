@@ -15,7 +15,7 @@ last_spawn_time = 0
 
 # Just a flat Tools list like the image
 SECTIONS = [
-    {"name": "Tools", "tools": ["beaker", "burner", "petri", "dropper"]},
+    {"name": "Tools", "tools": ["flask", "beaker", "test_tube", "burner", "dropper", "cylinder", "petri", "rod", "spatula"]},
 ]
 
 TOOL_MAP = {t["id"]: t for t in TOOLS}
@@ -45,7 +45,12 @@ def blend_icon(base, icon, x, y):
 
 def draw_toolbar_bottom(out, W, H):
     """Draws the dark glossy Toolbar at the bottom, mimicking the mockup."""
-    toolbar_w = 480
+    
+    sec = SECTIONS[0]
+    total_tools = len(sec["tools"])
+    total_icons_width = total_tools * ICON_SIZE + (total_tools - 1) * 30
+    
+    toolbar_w = max(480, total_icons_width + 80)
     toolbar_h = 100
     x = (W - toolbar_w) // 2
     y = H - toolbar_h - 20
@@ -60,9 +65,6 @@ def draw_toolbar_bottom(out, W, H):
     icon_positions = []
     
     # Calculate spacing
-    sec = SECTIONS[0]
-    total_tools = len(sec["tools"])
-    total_icons_width = total_tools * ICON_SIZE + (total_tools - 1) * 30
     start_x = x + (toolbar_w - total_icons_width) // 2
     
     ix = start_x
@@ -107,9 +109,11 @@ def handle_ribbon_interaction(detected_hands, W, H, icon_positions, world_object
         # Check each icon card
         for (rx, ry, rw, rh, tool_info) in icon_positions:
             if rx <= hx <= rx + rw and ry <= hy <= ry + rh:
-                # Spawn tool exactly at center
+                # Spawn tool with a small random offset to prevent overlapping
+                offset_x = int(np.random.randint(-150, 151))
+                offset_y = int(np.random.randint(-50, 51))
                 world_objects.append(
-                    make_object(tool_info["id"], W // 2, int(H * 0.40))
+                    make_object(tool_info["id"], (W // 2) + offset_x, int(H * 0.40) + offset_y)
                 )
                 last_spawn_time = now
                 print(f"[UI] Spawned {tool_info['name']}")
