@@ -1,80 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import {
+  CHEMICALS,
+  CATEGORIES,
+  type Chemical,
+  type Category,
+} from "../data/chemicals";
 
-export interface Chemical {
-  id: string;
-  name: string;
-  fullName: string;
-  colorName: string;
-  color: string; // CSS color
-  state: "Liquid" | "Solid" | "Gas";
-  temp: string;
-  formula: string;
-}
-
-export const CHEMICALS: Chemical[] = [
-  {
-    id: "hcl",
-    name: "HCl",
-    fullName: "Hydrochloric Acid",
-    colorName: "Pale Yellow",
-    color: "#fde68a",
-    state: "Liquid",
-    temp: "25°C",
-    formula: "HCl",
-  },
-  {
-    id: "naoh",
-    name: "NaOH",
-    fullName: "Sodium Hydroxide",
-    colorName: "White",
-    color: "#e2e8f0",
-    state: "Solid",
-    temp: "20°C",
-    formula: "NaOH",
-  },
-  {
-    id: "cuso4",
-    name: "CuSO₄",
-    fullName: "Copper(II) Sulfate",
-    colorName: "Vivid Blue",
-    color: "#3b82f6",
-    state: "Liquid",
-    temp: "25°C",
-    formula: "CuSO₄",
-  },
-  {
-    id: "h2so4",
-    name: "H₂SO₄",
-    fullName: "Sulfuric Acid",
-    colorName: "Colorless",
-    color: "#94a3b8",
-    state: "Liquid",
-    temp: "20°C",
-    formula: "H₂SO₄",
-  },
-  {
-    id: "kcl",
-    name: "KCl",
-    fullName: "Potassium Chloride",
-    colorName: "White Crystal",
-    color: "#f1f5f9",
-    state: "Solid",
-    temp: "22°C",
-    formula: "KCl",
-  },
-  {
-    id: "ethanol",
-    name: "C₂H₅OH",
-    fullName: "Ethanol",
-    colorName: "Colorless",
-    color: "#a7f3d0",
-    state: "Liquid",
-    temp: "18°C",
-    formula: "C₂H₅OH",
-  },
-];
+// Re-export so existing imports from other files still work
+export type { Chemical };
 
 interface LeftPanelProps {
   onAddChemical: (chem: Chemical) => void;
@@ -82,13 +17,24 @@ interface LeftPanelProps {
 
 export default function LeftPanel({ onAddChemical }: LeftPanelProps) {
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<Category>("All");
   const [spawning, setSpawning] = useState<string | null>(null);
 
-  const filtered = CHEMICALS.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.fullName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return CHEMICALS.filter((c) => {
+      const matchesCategory =
+        activeCategory === "All" || c.category === activeCategory;
+      const matchesSearch =
+        q === "" ||
+        c.name.toLowerCase().includes(q) ||
+        c.fullName.toLowerCase().includes(q) ||
+        c.formula.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q) ||
+        c.id.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [search, activeCategory]);
 
   const handleAdd = (chem: Chemical) => {
     setSpawning(chem.id);
@@ -111,6 +57,35 @@ export default function LeftPanel({ onAddChemical }: LeftPanelProps) {
           onChange={(e) => setSearch(e.target.value)}
           autoComplete="off"
         />
+        {search && (
+          <button
+            className="search-clear"
+            onClick={() => setSearch("")}
+            title="Clear search"
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="category-tabs">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            className={`category-tab ${activeCategory === cat ? "active" : ""}`}
+            onClick={() => setActiveCategory(cat)}
+            title={`Filter by ${cat}`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Result count */}
+      <div className="chem-result-count">
+        {filtered.length} of {CHEMICALS.length} chemicals
       </div>
 
       {/* Cards */}
@@ -154,8 +129,9 @@ export default function LeftPanel({ onAddChemical }: LeftPanelProps) {
               </div>
             </div>
 
-            {/* Add button */}
+            {/* Category badge + Add button */}
             <div className="chem-footer">
+              <span className="chem-category-badge">{chem.category}</span>
               <button
                 id={`btn-add-${chem.id}`}
                 className={`btn-add ${spawning === chem.id ? "spawning" : ""}`}

@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useRef } from "react";
 import TopBar from "./components/TopBar";
-import LeftPanel, { type Chemical } from "./components/LeftPanel";
+import LeftPanel from "./components/LeftPanel";
+import type { Chemical } from "./data/chemicals";
 import RightPanel, { type ReactionState } from "./components/RightPanel";
 import BottomToolbar, { type Tool } from "./components/BottomToolbar";
 import LabSimulation, {
@@ -78,11 +79,7 @@ export default function Home() {
   }, [addToast]);
 
   const handleAddChemical = useCallback((chem: Chemical) => {
-    const emojiMap: Record<string, string> = {
-      hcl: "💛", naoh: "🤍", cuso4: "💙",
-      h2so4: "🩶", kcl: "🪨", ethanol: "💚",
-    };
-    const emoji = emojiMap[chem.id] ?? "💧";
+    const emoji = chem.emoji ?? "💧";
     labRef.current?.spawnObject("dropper", emoji, chem.name, chem);
 
     addToast(emoji, `${chem.fullName} dropper added`);

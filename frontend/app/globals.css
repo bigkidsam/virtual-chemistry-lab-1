@@ -420,7 +420,7 @@ html, body {
 .chem-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 .btn-add {
@@ -443,6 +443,83 @@ html, body {
   filter: brightness(1.15);
   transform: scale(1.05);
 }
+
+/* Search clear button */
+.search-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.search-clear:hover {
+  color: var(--rose);
+  background: rgba(244, 63, 94, 0.15);
+}
+
+/* Category filter tabs */
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.category-tab {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.category-tab:hover {
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--text-secondary);
+  border-color: var(--amber-border);
+}
+
+.category-tab.active {
+  background: linear-gradient(135deg, var(--amber), var(--amber-dark));
+  color: #000;
+  border-color: var(--amber);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Result count */
+.chem-result-count {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: right;
+  padding: 0 4px 6px;
+  letter-spacing: 0.04em;
+}
+
+/* Category badge on cards */
+.chem-category-badge {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
 
 /* ======================================================
    SIMULATION AREA
