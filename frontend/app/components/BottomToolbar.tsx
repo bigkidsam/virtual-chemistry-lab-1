@@ -21,11 +21,17 @@ export const TOOLS: Tool[] = [
   { id: "spatula",   name: "Spatula",   emoji: "🗡️",  description: "Spatula for solids" },
 ];
 
-interface BottomToolbarProps {
-  onSpawnTool: (tool: Tool) => void;
+interface ToolCounts {
+  [toolId: string]: number;
 }
 
-export default function BottomToolbar({ onSpawnTool }: BottomToolbarProps) {
+interface BottomToolbarProps {
+  onSpawnTool: (tool: Tool) => void;
+  toolCounts: ToolCounts;
+  onRemoveTool: (toolId: string) => void;
+}
+
+export default function BottomToolbar({ onSpawnTool, toolCounts, onRemoveTool }: BottomToolbarProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const handleClick = (tool: Tool) => {
@@ -34,26 +40,46 @@ export default function BottomToolbar({ onSpawnTool }: BottomToolbarProps) {
     setTimeout(() => setActiveId(null), 400);
   };
 
+  const handleBadgeClick = (e: React.MouseEvent, toolId: string) => {
+    e.stopPropagation(); // prevent spawning a new tool
+    onRemoveTool(toolId);
+  };
+
   return (
     <footer className="bottom-toolbar">
       <span className="toolbar-section-label">Tools</span>
 
-      {TOOLS.map((tool) => (
-        <div
-          key={tool.id}
-          id={`tool-${tool.id}`}
-          className={`tool-card ${activeId === tool.id ? "spawning" : ""}`}
-          onClick={() => handleClick(tool)}
-          title={tool.description}
-          role="button"
-          aria-label={`Spawn ${tool.name}`}
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && handleClick(tool)}
-        >
-          <span className="tool-card-icon">{tool.emoji}</span>
-          <span className="tool-card-name">{tool.name}</span>
-        </div>
-      ))}
+      {TOOLS.map((tool) => {
+        const count = toolCounts[tool.id] || 0;
+        return (
+          <div
+            key={tool.id}
+            id={`tool-${tool.id}`}
+            className={`tool-card ${activeId === tool.id ? "spawning" : ""}`}
+            onClick={() => handleClick(tool)}
+            title={tool.description}
+            role="button"
+            aria-label={`Spawn ${tool.name}`}
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && handleClick(tool)}
+          >
+            <span className="tool-card-icon">{tool.emoji}</span>
+            <span className="tool-card-name">{tool.name}</span>
+
+            {count > 0 && (
+              <span
+                className="tool-badge"
+                onClick={(e) => handleBadgeClick(e, tool.id)}
+                title={`${count} in lab — click to remove one`}
+                role="button"
+                aria-label={`Remove one ${tool.name}`}
+              >
+                {count}
+              </span>
+            )}
+          </div>
+        );
+      })}
     </footer>
   );
 }

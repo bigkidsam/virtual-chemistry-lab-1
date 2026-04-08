@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import TopBar from "./components/TopBar";
 import LeftPanel from "./components/LeftPanel";
 import type { Chemical } from "./data/chemicals";
@@ -89,6 +89,20 @@ export default function Home() {
     setObjects(objs);
     setReaction((prev) => ({ ...prev, objectCount: objs.length }));
   }, []);
+
+  /* ---- Tool counts for badges ---- */
+  const toolCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const obj of objects) {
+      counts[obj.type] = (counts[obj.type] || 0) + 1;
+    }
+    return counts;
+  }, [objects]);
+
+  const handleRemoveTool = useCallback((toolId: string) => {
+    labRef.current?.removeObjectByType(toolId);
+    addToast("🗑️", `Removed a ${toolId} from lab`);
+  }, [addToast]);
 
   const handleReactionUpdate = useCallback(
     (progress: number, temp: number, equation: string, status: "idle" | "reacting" | "complete") => {
@@ -182,7 +196,7 @@ export default function Home() {
 
       <RightPanel reaction={reaction} />
 
-      <BottomToolbar onSpawnTool={handleSpawnTool} />
+      <BottomToolbar onSpawnTool={handleSpawnTool} toolCounts={toolCounts} onRemoveTool={handleRemoveTool} />
 
       {/* Floating Global Camera Toggle */}
       <button
