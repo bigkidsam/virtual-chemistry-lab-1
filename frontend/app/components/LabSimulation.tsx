@@ -69,6 +69,7 @@ interface LabSimulationProps {
 export interface LabSimulationHandle {
   spawnObject: (type: string, emoji: string, label: string, chemical?: Chemical) => void;
   resetObjects: () => void;
+  removeObjectByType: (type: string) => void;
 }
 
 /* =========================================================
@@ -936,7 +937,14 @@ const LabSimulation = forwardRef<LabSimulationHandle, LabSimulationProps>(functi
     onObjectsChange([]);
   }, [onObjectsChange]);
 
-  useImperativeHandle(ref, () => ({ spawnObject, resetObjects }), [resetObjects, spawnObject]);
+  const removeObjectByType = useCallback((type: string) => {
+    const idx = objectsRef.current.findLastIndex((o) => o.type === type);
+    if (idx === -1) return;
+    objectsRef.current = objectsRef.current.filter((_, i) => i !== idx);
+    onObjectsChange([...objectsRef.current]);
+  }, [onObjectsChange]);
+
+  useImperativeHandle(ref, () => ({ spawnObject, resetObjects, removeObjectByType }), [resetObjects, spawnObject, removeObjectByType]);
 
   return (
     <div className={`sim-area ${cameraActive ? "has-camera" : ""}`} ref={containerRef}>
