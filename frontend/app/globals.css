@@ -65,7 +65,7 @@
 html,
 body {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
   font-family: var(--font-sans);
   background: var(--bg-void);
   color: var(--text-primary);

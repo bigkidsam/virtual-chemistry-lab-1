@@ -93,6 +93,118 @@ WINDOW_NAME = "Virtual Chemistry Lab-1"
 if not BRIDGE_ONLY:
     cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+
+def load_frames(folder,prefix, max_count=200):
+    frames=[]
+    for i in range(1,max_count):
+        path = os.path.join(folder,f"{prefix}_{i:02d}.png")
+        if not os.path.exists(path):
+            break
+        frames.append(Image.open(path).convert("RGBA"))
+    return frames
+        
+        
+FLAME_FRAMES =assets.get_flame_frames()
+if not FLAME_FRAMES:
+    FLAME_FRAMES = load_frames("tool_images/flame_frames","flame",300)
+    
+    #world_objects = [
+    #     make_objects("flask",300,220),
+    #     make_objects("flask",600,220),
+    # ]
+    
+    # slot_states = create_slots()
+    # particles =[]
+    
+    # hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
+    # prev_time= time.time
+    
+    
+    
+    # def ensure_burner_fields(obj):
+    #     if obj.get("type") != "burner":
+    #         return                                
+            
+    #     if "flame_frames" not in obj:
+    #         obj["flame_frames"]=FLAME_FRAMES
+    #         obj["flame_index"]=0
+    #         obj["flame_timer"]=0.0
+    #         obj["flame_on"]=False
+            
+    # def compute_slot_positions(W,H):
+    #     center_x=W//2
+    #     base_y=  
+
+
+
+
+cap = None
+for i in range(6):
+    cam = cv2.VideoCapture(i)
+    if cam.isOpened():
+        cap = cam
+        break
+if cap is None:
+    raise RuntimeError("No camera found")
+
+
+# -------------------------------------------------
+# Assets
+# -------------------------------------------------
+# def load_frames(folder, prefix, max_count=200):
+    # frames = []
+    # for i in range(1, max_count):
+        # path = os.path.join(folder, f"{prefix}_{i:02d}.png")
+        # if not os.path.exists(path):
+            # break
+        # frames.append(Image.open(path).convert("RGBA"))
+    # return frames
+
+
+FLAME_FRAMES = load_frames("tool_images/flame_frames", "flame", 300)
+DROPLET_FRAMES = load_frames("tool_images/droplet_frames", "drop", 200)
+
+
+# -------------------------------------------------
+# World state
+# -------------------------------------------------
+world_objects = []
+    #make_object("flask", 300, 220),
+    #make_object("flask", 600, 220),
+
+
+slot_states = create_slots()
+droplets = []
+
+particles=[]
+
+hand_buffers = {"Left": deque(maxlen=5), "Right": deque(maxlen=5)}
+pinch_prev = {"Left": False, "Right": False}
+
+prev_time = time.time()  
+global_paused = False
+
+
+
+
+
+# -------------------------------------------------
+# Helpers
+# -------------------------------------------------
+def ensure_burner_fields(obj):
+    if obj.get("type") != "burner":
+        return
+    if "flame_frames" not in obj:
+        obj["flame_frames"] = FLAME_FRAMES
+        obj["flame_index"] = 0
+        obj["flame_timer"] = 0.0
+        obj["flame_on"] = False     
+
+
+def compute_slot_positions(W, H):
+    center_x = W // 2
+    base_y = int(H * SLOT_Y) if SLOT_Y < 1.0 else min(H - 150, int(SLOT_Y))
     left = center_x - ((SLOT_COUNT - 1) * SLOT_SPACING) // 2
     for i, s in enumerate(slot_states):
         s["pos"] = np.array([left + i * SLOT_SPACING, base_y], float)
@@ -155,7 +267,7 @@ try:
                 index_px = np.array([index.x * W, index.y * H])
                 thumb_px = np.array([thumb.x * W, thumb.y * H])
                 mcp_px = np.array([mcp.x * W, mcp.y * H])
-
+                
                 buf = hand_buffers[label]
                 buf.append(wrist_px)
                 smooth_wrist = np.mean(buf, axis=0)
@@ -264,7 +376,7 @@ try:
         if not global_paused:
             physics_update(world_objects, dt, floor_y)
             motion_update(world_objects,dt,ensure_burner_fields)
-            particle_update(particles, dt)
+            particle_update(particles, dt)                      
         
         
         compute_slot_positions(W,H)

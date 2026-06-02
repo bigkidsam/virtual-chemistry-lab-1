@@ -10,15 +10,17 @@ export interface Tool {
 }
 
 export const TOOLS: Tool[] = [
-  { id: "flask",     name: "Flask",     emoji: "⚗️",  description: "Conical flask for mixing" },
-  { id: "beaker",    name: "Beaker",    emoji: "🧪",  description: "Beaker for holding liquids" },
-  { id: "test_tube", name: "Test Tube", emoji: "🧫",  description: "Test tube for small samples" },
-  { id: "burner",    name: "Burner",    emoji: "🔥",  description: "Bunsen burner — heat source" },
-  { id: "dropper",   name: "Dropper",   emoji: "💧",  description: "Dropper to transfer liquids" },
-  { id: "cylinder",  name: "Cylinder",  emoji: "🥛",  description: "Graduated cylinder for precise volume" },
-  { id: "petri",     name: "Petri",     emoji: "🫙",  description: "Petri dish for solid cultures" },
-  { id: "rod",       name: "Rod",       emoji: "🥢",  description: "Stirring rod" },
-  { id: "spatula",   name: "Spatula",   emoji: "🗡️",  description: "Spatula for solids" },
+  { id: "flask",       name: "Flask",       emoji: "⚗️",  description: "Conical flask for mixing" },
+  { id: "beaker",      name: "Beaker",      emoji: "🧪",  description: "Beaker for holding liquids" },
+  { id: "test_tube",   name: "Test Tube",   emoji: "🧫",  description: "Test tube for small samples" },
+  { id: "burner",      name: "Burner",      emoji: "🔥",  description: "Bunsen burner — heat source" },
+  { id: "dropper",     name: "Dropper",     emoji: "💧",  description: "Dropper to transfer liquids" },
+  { id: "cylinder",    name: "Cylinder",    emoji: "🥛",  description: "Graduated cylinder for precise volume" },
+  { id: "petri",       name: "Petri",       emoji: "🫙",  description: "Petri dish for solid cultures" },
+  { id: "rod",         name: "Rod",         emoji: "🥢",  description: "Stirring rod" },
+  { id: "spatula",     name: "Spatula",     emoji: "🗡️",  description: "Spatula for solids" },
+  { id: "ph_meter",    name: "pH Probe",    emoji: "📟",  description: "Measure liquid pH level" },
+  { id: "thermometer", name: "Thermometer", emoji: "🌡️",  description: "Measure temperature" },
 ];
 
 interface ToolCounts {
