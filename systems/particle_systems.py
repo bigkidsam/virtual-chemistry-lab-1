@@ -7,7 +7,7 @@ def update(particles, dt):
     Update and decay particles.
     """
     alive = []
-
+f
     for p in particles:
         p["life"] -= dt
         if p["life"] <= 0:

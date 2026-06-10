@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Technology Report — Virtual Chemistry Laboratory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  /* ── RESET & BASE ───────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 12pt; }
+  body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.7;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* ── PAGE & PRINT ───────────────────────── */
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #94a3b8; }
+  }
+  @media print {
+    body { padding: 0; }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    .cover { page-break-after: always; }
+    table { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+    pre { page-break-inside: avoid; }
+  }
+
+  /* ── COVER PAGE ─────────────────────────── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #f8fafc;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
+  }
+  .cover .emoji-big { font-size: 80px; margin-bottom: 24px; filter: drop-shadow(0 0 30px rgba(245,158,11,0.4)); }
+  .cover h1 { font-size: 28pt; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 8px; line-height: 1.2; }
+  .cover .subtitle { font-size: 14pt; font-weight: 500; color: #f59e0b; margin-bottom: 32px; }
+  .cover .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 40px; text-align: left; margin-top: 20px; }
+  .cover .meta-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; }
+  .cover .meta-value { font-size: 11pt; font-weight: 600; color: #e2e8f0; }
+  .cover .divider { width: 80px; height: 3px; background: linear-gradient(90deg, #f59e0b, #3b82f6); border-radius: 2px; margin: 24px auto; }
+
+  /* ── TOC ─────────────────────────────────── */
+  .toc { padding: 0 0 20px 0; }
+  .toc h2 { font-size: 18pt; font-weight: 800; margin-bottom: 20px; color: #0f172a; border-bottom: 3px solid #f59e0b; padding-bottom: 8px; }
+  .toc-entry { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px dotted #cbd5e1; }
+  .toc-entry:last-child { border-bottom: none; }
+  .toc-chapter { font-weight: 600; color: #334155; font-size: 10.5pt; }
+  .toc-page { font-weight: 700; color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 10pt; }
+
+  /* ── HEADINGS ────────────────────────────── */
+  h2 {
+    font-size: 17pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 32px 0 14px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+    position: relative;
+  }
+  h2::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0;
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+  }
+  h3 {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 20px 0 8px 0;
+  }
+  h4 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #475569;
+    margin: 14px 0 6px 0;
+  }
+
+  /* ── PARAGRAPHS ─────────────────────────── */
+  p { margin: 8px 0; text-align: justify; }
+  strong { font-weight: 700; }
+
+  /* ── TABLES ─────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px 0;
+    font-size: 9.5pt;
+  }
+  thead th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 8.5pt;
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid #1e293b;
+  }
+  tbody td {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #fef3c7; }
+
+  /* ── CODE ────────────────────────────────── */
+  code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 9pt;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid #e2e8f0;
+    color: #be185d;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5pt;
+    line-height: 1.6;
+    margin: 10px 0 16px 0;
+    border-left: 4px solid #f59e0b;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  .kw { color: #c084fc; }  /* keyword */
+  .str { color: #86efac; } /* string */
+  .cm { color: #64748b; }  /* comment */
+  .fn { color: #67e8f9; }  /* function */
+  .num { color: #fde68a; } /* number */
+
+  /* ── LISTS ──────────────────────────────── */
+  ul, ol { margin: 6px 0 10px 20px; }
+  li { margin: 3px 0; }
+
+  /* ── DIAGRAM BOXES ──────────────────────── */
+  .diagram {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5pt;
+    white-space: pre;
+    line-height: 1.5;
+    overflow-x: auto;
+    color: #334155;
+  }
+
+  /* ── CALLOUT BOXES ──────────────────────── */
+  .callout {
+    border-left: 4px solid #3b82f6;
+    background: #eff6ff;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .callout.amber { border-left-color: #f59e0b; background: #fffbeb; }
+  .callout.green { border-left-color: #10b981; background: #ecfdf5; }
+  .callout.red { border-left-color: #ef4444; background: #fef2f2; }
+
+  /* ── CHAPTER HEADER ─────────────────────── */
+  .ch-num {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-weight: 800;
+    font-size: 9pt;
+    padding: 2px 10px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  /* ── FOOTER ─────────────────────────────── */
+  .footer-bar {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+    border-top: 2px solid #e2e8f0;
+    font-size: 9pt;
+    color: #94a3b8;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== COVER PAGE ========== -->
+<div class="cover">
+  <div class="emoji-big">⚗️</div>
+  <h1>WEB TECHNOLOGY REPORT</h1>
+  <div class="divider"></div>
+  <div class="subtitle">Virtual Chemistry Laboratory</div>
+  <p style="font-size:11pt; color:#cbd5e1; max-width:520px; line-height:1.6;">
+    An Interactive Web-Based Science Education Platform — Comprehensive Technical Analysis of Web Technologies
+  </p>
+  <div style="margin-top:40px;" class="meta-grid">
+    <div><div class="meta-label">Project Title</div><div class="meta-value">Virtual Chemistry Laboratory</div></div>
+    <div><div class="meta-label">Report Date</div><div class="meta-value">June 2026</div></div>
+    <div><div class="meta-label">Technology Stack</div><div class="meta-value">Next.js 16 · React 19 · TypeScript 5</div></div>
+    <div><div class="meta-label">Total Pages</div><div class="meta-value">30</div></div>
+    <div><div class="meta-label">Platform</div><div class="meta-value">Web (Cross-Browser)</div></div>
+    <div><div class="meta-label">APIs Used</div><div class="meta-value">Canvas · MediaPipe · Web Audio</div></div>
+  </div>
+</div>
+
+<!-- ========== TABLE OF CONTENTS ========== -->
+<div class="page-break"></div>
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 1 — Introduction &amp; Project Overview</span><span class="toc-page">3</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 2 — Problem Statement &amp; Objectives</span><span class="toc-page">4</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 3 — Literature Review &amp; Related Work</span><span class="toc-page">5</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 4 — System Architecture Overview</span><span class="toc-page">6</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 5 — Technology Stack Analysis</span><span class="toc-page">7–8</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 6 — Frontend Architecture — Next.js &amp; React</span><span class="toc-page">9–10</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 7 — TypeScript Type System &amp; Data Modeling</span><span class="toc-page">11</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 8 — HTML5 Canvas Rendering Engine</span><span class="toc-page">12–13</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 9 — Real-Time Reaction Engine</span><span class="toc-page">14–15</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 10 — Chemical Database &amp; Reaction Registry</span><span class="toc-page">16</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 11 — Physics Simulation System</span><span class="toc-page">17</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 12 — Hand Gesture Recognition — MediaPipe</span><span class="toc-page">18–19</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 13 — Audio Snap Detection &amp; Web Audio API</span><span class="toc-page">20</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 14 — Python Backend Bridge Server</span><span class="toc-page">21</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 15 — UI/UX Design &amp; Component Architecture</span><span class="toc-page">22–23</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 16 — CSS Design System &amp; Theming</span><span class="toc-page">24</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 17 — State Management Architecture</span><span class="toc-page">25</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 18 — Application Routing &amp; Page Structure</span><span class="toc-page">26</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 19 — Performance Optimization Techniques</span><span class="toc-page">27</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 20 — Security &amp; Data Handling</span><span class="toc-page">28</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 21 — Testing &amp; Quality Assurance</span><span class="toc-page">29</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 22 — Conclusion &amp; Future Scope</span><span class="toc-page">30</span></div>
+  <div class="toc-entry"><span class="toc-chapter">References</span><span class="toc-page">30</span></div>
+</div>
+
+<!-- ===================================== -->
+<!--         CHAPTER 1                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">1</span> Introduction &amp; Project Overview</h2>
+
+<h3>1.1 Introduction</h3>
+<p>The <strong>Virtual Chemistry Laboratory</strong> is a cutting-edge, interactive web application that simulates a real-world chemistry laboratory environment directly within the browser. Unlike traditional educational chemistry software that relies on static diagrams or simple animations, this platform provides a fully physics-driven, real-time simulation environment where users can drag laboratory glassware, pour chemicals, observe authentic chemical reactions with proper stoichiometry, and even control equipment using hand gestures captured through the device's webcam.</p>
+
+<p>The project represents a significant advancement in web-based science education technology, leveraging modern web APIs and machine learning inference directly in the browser to deliver an experience that was previously only possible through native desktop applications.</p>
+
+<h3>1.2 Motivation</h3>
+<p>Traditional chemistry education faces several critical challenges:</p>
+<ul>
+  <li><strong>Safety Concerns:</strong> Students cannot freely experiment with hazardous chemicals in a physical laboratory setting without strict supervision.</li>
+  <li><strong>Accessibility:</strong> Not all educational institutions have well-equipped chemistry laboratories, particularly in rural and underserved communities.</li>
+  <li><strong>Cost:</strong> Maintaining a chemistry lab with fresh reagents, safety equipment, and glassware is expensive.</li>
+  <li><strong>Repeatability:</strong> Students cannot easily repeat experiments multiple times to reinforce learning.</li>
+  <li><strong>Remote Education:</strong> The COVID-19 pandemic highlighted the urgent need for virtual laboratory experiences that can be accessed from anywhere.</li>
+</ul>
+<p>This project addresses all of these challenges by providing a zero-risk, zero-cost, universally accessible virtual laboratory powered entirely by web technologies.</p>
+
+<h3>1.3 Scope of the Report</h3>
+<p>This report provides an in-depth technical analysis of the web technologies employed in building the Virtual Chemistry Laboratory, including the frontend framework (Next.js/React), real-time rendering via HTML5 Canvas, gesture recognition via MediaPipe, audio processing via the Web Audio API, the backend Python bridge, and the overall system architecture. Each technology choice is justified with comparisons to alternatives and evaluated for performance, scalability, and developer experience.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 2                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">2</span> Problem Statement &amp; Objectives</h2>
+
+<h3>2.1 Problem Statement</h3>
+<p>How can modern web technologies be leveraged to create a fully interactive, real-time virtual chemistry laboratory simulation that supports realistic physics, chemical reaction modeling, gesture-based interaction, and immersive audio feedback — all running entirely in the browser without requiring native application installation?</p>
+
+<h3>2.2 Project Objectives</h3>
+<ol>
+  <li><strong>Real-Time Chemical Reaction Simulation:</strong> Implement a reaction engine that accurately models neutralization, precipitation, synthesis, decomposition, displacement, and combustion reactions with proper stoichiometry, thermodynamics (enthalpy ΔH), and visual state transitions.</li>
+  <li><strong>Physics-Based Object Manipulation:</strong> Simulate gravity, collision detection, angular momentum, and damping for all laboratory objects on an HTML5 Canvas, enabling natural drag-and-drop interaction.</li>
+  <li><strong>Hand Gesture Control via Computer Vision:</strong> Integrate Google's MediaPipe Hand Landmarker to detect hand landmarks and pinch gestures from the user's webcam feed, allowing mouse-free laboratory interaction.</li>
+  <li><strong>Audio Snap Detection:</strong> Implement real-time acoustic signal processing to detect finger snap sounds, enabling hands-free Bunsen burner control.</li>
+  <li><strong>Comprehensive Chemical Database:</strong> Provide a scientifically accurate database of 150+ chemicals spanning acids, bases, salts, organic compounds, indicators, oxidizers, metals, gases, and other reagents.</li>
+  <li><strong>Educational Assessment:</strong> Include interactive quizzes, safety rating systems (NFPA 704), and downloadable lab reports for each completed experiment.</li>
+  <li><strong>Cross-Platform Web Delivery:</strong> Deliver the entire application as a web application accessible from any modern browser without plugins, installations, or special hardware.</li>
+</ol>
+
+<h3>2.3 Functional Requirements</h3>
+<table>
+  <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+  <tbody>
+    <tr><td>FR-01</td><td>Users can drag glassware and chemicals onto a virtual lab bench</td><td>High</td></tr>
+    <tr><td>FR-02</td><td>Chemical reactions trigger automatically when compatible chemicals are mixed</td><td>High</td></tr>
+    <tr><td>FR-03</td><td>Users can control equipment via webcam hand gestures (pinch to grab)</td><td>High</td></tr>
+    <tr><td>FR-04</td><td>Bunsen burner ignition via finger snap audio detection</td><td>Medium</td></tr>
+    <tr><td>FR-05</td><td>Real-time temperature, pH, and progress monitoring during reactions</td><td>High</td></tr>
+    <tr><td>FR-06</td><td>Particle effects (bubbles, steam, smoke, fire, precipitate, sparks)</td><td>Medium</td></tr>
+    <tr><td>FR-07</td><td>Downloadable lab reports upon reaction completion</td><td>Medium</td></tr>
+    <tr><td>FR-08</td><td>Interactive periodic table page</td><td>Low</td></tr>
+    <tr><td>FR-09</td><td>Safety quiz with scoring and EXP system</td><td>Medium</td></tr>
+    <tr><td>FR-10</td><td>User authentication via simulated login with localStorage persistence</td><td>Low</td></tr>
+  </tbody>
+</table>
+
+<h3>2.4 Non-Functional Requirements</h3>
+<table>
+  <thead><tr><th>ID</th><th>Requirement</th><th>Target</th></tr></thead>
+  <tbody>
+    <tr><td>NFR-01</td><td>Frame rate during simulation</td><td>≥ 60 FPS</td></tr>
+    <tr><td>NFR-02</td><td>Hand gesture detection latency</td><td>&lt; 100ms</td></tr>
+    <tr><td>NFR-03</td><td>Initial page load time</td><td>&lt; 3 seconds</td></tr>
+    <tr><td>NFR-04</td><td>Browser compatibility</td><td>Chrome, Firefox, Edge, Safari</td></tr>
+    <tr><td>NFR-05</td><td>Responsive layout</td><td>Desktop 1280px+</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================================== -->
+<!--         CHAPTER 3                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">3</span> Literature Review &amp; Related Work</h2>
+
+<h3>3.1 Virtual Laboratories in Education</h3>
+<p>Virtual laboratories have been a subject of academic research since the early 2000s. Dalgarno et al. (2009) demonstrated that virtual labs could achieve learning outcomes comparable to physical labs when properly designed. More recently, the emergence of WebGL and HTML5 Canvas has enabled browser-based simulations that rival native applications in fidelity.</p>
+
+<h3>3.2 Existing Virtual Chemistry Platforms</h3>
+<table>
+  <thead><tr><th>Platform</th><th>Technology</th><th>Gesture Support</th><th>Open Source</th></tr></thead>
+  <tbody>
+    <tr><td>PhET Interactive Simulations</td><td>Java → HTML5/Canvas</td><td>No</td><td>Yes</td></tr>
+    <tr><td>Labster</td><td>Unity WebGL</td><td>No</td><td>No (Commercial)</td></tr>
+    <tr><td>ChemCollective</td><td>Java Applets (Legacy)</td><td>No</td><td>Yes</td></tr>
+    <tr><td>Beyond Labz</td><td>Flash → HTML5</td><td>No</td><td>No (Commercial)</td></tr>
+    <tr style="background:#fffbeb !important; font-weight:700;"><td>This Project</td><td>Next.js + Canvas + MediaPipe</td><td>Yes (Dual-Hand)</td><td>Yes</td></tr>
+  </tbody>
+</table>
+
+<h3>3.3 MediaPipe in Web Applications</h3>
+<p>Google's MediaPipe framework (Lugaresi et al., 2019) provides production-ready machine learning pipelines for computer vision tasks. The Hand Landmarker model detects 21 3D landmarks per hand at 30+ FPS on consumer hardware. This project leverages the <code>@mediapipe/tasks-vision</code> npm package to run inference directly in the browser via WebAssembly and WebGPU, eliminating the need for a backend ML server.</p>
+
+<h3>3.4 Web Audio API for Signal Processing</h3>
+<p>The W3C Web Audio API specification provides a powerful, low-latency audio processing graph. Previous work by Roberts et al. (2014) demonstrated real-time audio analysis in the browser. This project extends that concept by implementing a snap detection algorithm using bandpass filtering and amplitude thresholding.</p>
+
+<h3>3.5 Research Gap</h3>
+<div class="callout amber">
+  <strong>Key Finding:</strong> While existing virtual labs provide excellent visualization, none combine real-time physics simulation, computer vision gesture control, and acoustic interaction within a single browser-based application. This project fills that gap by synthesizing these technologies into a cohesive educational platform.
+</div>
+
+<!-- ===================================== -->
+<!--         CHAPTER 4                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">4</span> System Architecture Overview</h2>
+
+<h3>4.1 High-Level Architecture</h3>
+<p>The Virtual Chemistry Laboratory follows a <strong>hybrid client-server architecture</strong> with the vast majority of computation occurring on the client side (browser). The Python backend serves as an optional bridge for enhanced camera processing.</p>
+
+<div class="diagram">┌──────────────────────────────────────────────────────────────────────┐
+│                        CLIENT (Browser)                              │
+│  ┌─────────────┐  ┌────────────────┐  ┌──────────────────────────┐  │
+│  │  Next.js     │  │  React 19      │  │  HTML5 Canvas (2D)       │  │
+│  │  App Router  │  │  Components    │  │  60fps Rendering Loop    │  │
+│  └──────┬──────┘  └───────┬────────┘  └───────────┬──────────────┘  │
+│         │                 │                        │                  │
+│  ┌──────┴─────────────────┴────────────────────────┴──────────────┐  │
+│  │                    Application Layer                            │  │
+│  │  ┌─────────────┐ ┌────────────┐ ┌─────────────┐ ┌───────────┐ │  │
+│  │  │ Reaction    │ │ Physics    │ │ Gesture     │ │ Audio     │ │  │
+│  │  │ Engine      │ │ Engine     │ │ Recognition │ │ Synth     │ │  │
+│  │  └─────────────┘ └────────────┘ └─────────────┘ └───────────┘ │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │                    Data Layer                                   │  │
+│  │  ┌──────────────┐  ┌────────────────┐  ┌────────────────────┐ │  │
+│  │  │ chemicals.ts │  │ reactions.ts   │  │ localStorage       │ │  │
+│  │  │ (150+ items) │  │ (21 reactions) │  │ (user sessions)    │ │  │
+│  │  └──────────────┘  └────────────────┘  └────────────────────┘ │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │ HTTP Polling (Optional)
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    PYTHON BRIDGE SERVER (Optional)                    │
+│  ┌─────────────┐  ┌────────────────┐  ┌──────────────────────────┐  │
+│  │  OpenCV      │  │  MediaPipe     │  │  HTTP Server (8765)      │  │
+│  │  Camera Feed │  │  Hand Detector │  │  /state  /frame.jpg      │  │
+│  └─────────────┘  └────────────────┘  └──────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────┘</div>
+
+<h3>4.2 Key Architectural Decisions</h3>
+<ol>
+  <li><strong>Client-Heavy Architecture:</strong> All simulation logic (physics, reactions, rendering) runs in the browser to minimize latency and eliminate server dependency.</li>
+  <li><strong>Optional Python Bridge:</strong> The Python server is only needed for legacy webcam systems that don't support the browser MediaStream API or for enhanced OpenCV processing.</li>
+  <li><strong>Pure TypeScript Engine:</strong> The reaction engine (<code>reactionEngine.ts</code>) is a pure function with zero side effects, making it testable and deterministic.</li>
+  <li><strong>Canvas-Based Rendering:</strong> HTML5 Canvas 2D was chosen over WebGL for simplicity and broad compatibility, while still achieving 60fps performance.</li>
+</ol>
+
+<h3>4.3 Data Flow</h3>
+<div class="diagram">User Input (Mouse / Touch / Gesture / Audio)
+        │
+        ▼
+┌─────────────────┐
+│  Event Handler   │ → Mouse/Touch → dragRef
+│                  │ → MediaPipe → handDataRef
+│                  │ → Audio → snap detection
+└────────┬────────┘
+         ▼
+┌─────────────────┐         ┌─────────────────┐
+│  Physics Loop    │ ──────→ │  Reaction Engine │
+│  (requestAnimationFrame)   │  (tickEngine)    │
+└────────┬────────┘         └────────┬────────┘
+         │                           │
+         └──────────┬────────────────┘
+                    ▼
+           ┌─────────────────┐
+           │  Canvas Render   │ → Vector art, liquids,
+           │                  │   particles, graphs
+           └─────────────────┘</div>
+
+<!-- ===================================== -->
+<!--         CHAPTER 5                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">5</span> Technology Stack Analysis</h2>
+
+<h3>5.1 Complete Technology Stack</h3>
+<table>
+  <thead><tr><th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Framework</strong></td><td>Next.js</td><td>16.2.1</td><td>Server-side rendering, file-based routing, bundling</td></tr>
+    <tr><td><strong>UI Library</strong></td><td>React</td><td>19.2.4</td><td>Component-based UI architecture</td></tr>
+    <tr><td><strong>Language</strong></td><td>TypeScript</td><td>5.x</td><td>Static typing, interfaces, type safety</td></tr>
+    <tr><td><strong>Styling</strong></td><td>Tailwind CSS + Custom CSS</td><td>4.x</td><td>Utility-first CSS + design system tokens</td></tr>
+    <tr><td><strong>Canvas</strong></td><td>HTML5 Canvas 2D API</td><td>—</td><td>Real-time simulation rendering</td></tr>
+    <tr><td><strong>Audio</strong></td><td>Web Audio API</td><td>—</td><td>Sound synthesis (bubble, sizzle, explosion)</td></tr>
+    <tr><td><strong>Vision</strong></td><td>@mediapipe/tasks-vision</td><td>0.10.33</td><td>Hand landmark detection in-browser</td></tr>
+    <tr><td><strong>Backend</strong></td><td>Python 3.x</td><td>—</td><td>Optional gesture bridge server</td></tr>
+    <tr><td><strong>CV Backend</strong></td><td>OpenCV (cv2)</td><td>—</td><td>Camera capture, frame encoding</td></tr>
+    <tr><td><strong>ML Backend</strong></td><td>MediaPipe (Python)</td><td>—</td><td>Hand detection, landmark extraction</td></tr>
+    <tr><td><strong>HTTP Server</strong></td><td>Python http.server</td><td>—</td><td>Lightweight bridge HTTP API</td></tr>
+    <tr><td><strong>Build Tool</strong></td><td>Turbopack (via Next.js)</td><td>—</td><td>Fast development builds</td></tr>
+    <tr><td><strong>Linting</strong></td><td>ESLint</td><td>9.x</td><td>Code quality enforcement</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 Why Next.js 16?</h3>
+<table>
+  <thead><tr><th>Feature</th><th>Next.js</th><th>Create React App</th><th>Vite</th></tr></thead>
+  <tbody>
+    <tr><td>File-based routing</td><td>✅ App Router</td><td>❌ Manual</td><td>❌ Manual</td></tr>
+    <tr><td>Server Components</td><td>✅ RSC</td><td>❌</td><td>❌</td></tr>
+    <tr><td>SEO (SSR/SSG)</td><td>✅ Built-in</td><td>❌</td><td>❌</td></tr>
+    <tr><td>API Routes</td><td>✅ Built-in</td><td>❌</td><td>❌</td></tr>
+    <tr><td>TypeScript Support</td><td>✅ First-class</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Dev Server Speed</td><td>✅ Turbopack</td><td>⚠️ Webpack</td><td>✅ esbuild</td></tr>
+    <tr><td>Metadata API</td><td>✅ Built-in</td><td>❌</td><td>❌</td></tr>
+  </tbody>
+</table>
+
+<h3>5.3 Why React 19?</h3>
+<p>React 19 introduces several features utilized in this project:</p>
+<ul>
+  <li><strong><code>forwardRef</code> with improved performance:</strong> The <code>LabSimulation</code> component uses <code>forwardRef</code> to expose imperative methods (<code>spawnObject</code>, <code>resetObjects</code>, <code>cancelReaction</code>) to parent components.</li>
+  <li><strong><code>useCallback</code> and <code>useMemo</code> optimization:</strong> Extensively used to prevent unnecessary re-renders in the 60fps animation loop.</li>
+  <li><strong><code>useImperativeHandle</code>:</strong> Allows the parent Lab page to control the simulation canvas through a clean API.</li>
+</ul>
+
+<h3>5.4 Why TypeScript?</h3>
+<p>TypeScript provides essential type safety for a complex simulation project. Without TypeScript, managing the complex state of 15+ properties per world object across multiple subsystems (physics, rendering, reactions, gestures) would be extremely error-prone.</p>
+
+<pre><code><span class="cm">// Example: Strongly-typed reaction product interface</span>
+<span class="kw">export interface</span> <span class="fn">ReactionProduct</span> {
+  name: <span class="kw">string</span>;
+  formula: <span class="kw">string</span>;
+  color: <span class="kw">string</span>;    <span class="cm">// CSS hex color</span>
+  emoji: <span class="kw">string</span>;    <span class="cm">// Visual indicator</span>
+}</code></pre>
+
+<!-- ===================================== -->
+<!--         CHAPTER 6                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">6</span> Frontend Architecture — Next.js &amp; React</h2>
+
+<h3>6.1 Application Directory Structure</h3>
+<pre><code>frontend/
+├── app/
+│   ├── layout.tsx              <span class="cm"># Root layout with metadata</span>
+│   ├── page.tsx                <span class="cm"># Landing page (/)</span>
+│   ├── globals.css             <span class="cm"># Design system (1,538 lines)</span>
+│   ├── lab/page.tsx            <span class="cm"># Main lab simulation (/lab)</span>
+│   ├── dashboard/page.tsx      <span class="cm"># Student dashboard (/dashboard)</span>
+│   ├── login/page.tsx          <span class="cm"># Authentication page (/login)</span>
+│   ├── periodic-table/page.tsx <span class="cm"># Interactive periodic table</span>
+│   ├── quiz/page.tsx           <span class="cm"># Safety quiz (/quiz)</span>
+│   ├── about/page.tsx          <span class="cm"># Lab guide (/about)</span>
+│   ├── components/
+│   │   ├── LabSimulation.tsx   <span class="cm"># Canvas engine (1,984 lines)</span>
+│   │   ├── LeftPanel.tsx       <span class="cm"># Chemical selector (448 lines)</span>
+│   │   ├── RightPanel.tsx      <span class="cm"># Reaction monitor (461 lines)</span>
+│   │   ├── Navbar.tsx          <span class="cm"># Global navigation bar</span>
+│   │   └── Toast.tsx           <span class="cm"># Notification component</span>
+│   ├── engine/
+│   │   └── reactionEngine.ts   <span class="cm"># Reaction engine (515 lines)</span>
+│   ├── data/
+│   │   ├── chemicals.ts        <span class="cm"># 150+ chemicals</span>
+│   │   └── reactions.ts        <span class="cm"># 21 reactions</span>
+│   ├── hooks/
+│   │   ├── useHandGesture.ts   <span class="cm"># MediaPipe hook (253 lines)</span>
+│   │   ├── useCamera.ts        <span class="cm"># Camera hook (301 lines)</span>
+│   │   └── usePythonBridge.ts  <span class="cm"># Bridge polling (118 lines)</span>
+│   └── audio/
+│       └── audioSynth.ts       <span class="cm"># Web Audio synthesis (174 lines)</span>
+├── package.json
+├── tsconfig.json
+└── next.config.ts</code></pre>
+
+<h3>6.2 Component Architecture</h3>
+<p>The project follows a <strong>Container-Presenter pattern</strong>:</p>
+<div class="diagram">Lab Page (Container)
+├── TopBar (Presenter)     ─── Controls: Pause, Reset, Camera Toggle
+├── LeftPanel (Presenter)  ─── Chemical database browser with search
+├── LabSimulation (Engine) ─── Canvas rendering &amp; physics simulation
+├── RightPanel (Presenter) ─── Reaction monitor &amp; library
+└── BottomToolbar (Presenter) ─── Glassware tool spawning</div>
+
+<h3>6.3 React Hooks Architecture</h3>
+<table>
+  <thead><tr><th>Hook</th><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>useState</code></td><td>Multiple</td><td>Component-local state management</td></tr>
+    <tr><td><code>useRef</code></td><td>LabSimulation.tsx</td><td>Mutable refs for animation frame, canvas, particles</td></tr>
+    <tr><td><code>useEffect</code></td><td>Multiple</td><td>Side effects: resize observer, camera lifecycle</td></tr>
+    <tr><td><code>useCallback</code></td><td>LabSimulation.tsx</td><td>Memoized animation loop, event handlers</td></tr>
+    <tr><td><code>useMemo</code></td><td>LeftPanel.tsx</td><td>Filtered chemical list computation</td></tr>
+    <tr><td><code>useImperativeHandle</code></td><td>LabSimulation.tsx</td><td>Expose imperative API to parent</td></tr>
+    <tr><td><code>useCamera</code> (custom)</td><td>useCamera.ts</td><td>Camera + MediaPipe lifecycle management</td></tr>
+    <tr><td><code>usePythonBridge</code> (custom)</td><td>usePythonBridge.ts</td><td>Bridge server polling</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================================== -->
+<!--         CHAPTER 7                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">7</span> TypeScript Type System &amp; Data Modeling</h2>
+
+<h3>7.1 Core Type Definitions</h3>
+
+<h4>Chemical Interface</h4>
+<pre><code><span class="kw">export interface</span> <span class="fn">Chemical</span> {
+  id: <span class="kw">string</span>;          <span class="cm">// Unique identifier (e.g., "hcl", "naoh")</span>
+  name: <span class="kw">string</span>;        <span class="cm">// Display name (e.g., "HCl", "NaOH")</span>
+  fullName: <span class="kw">string</span>;    <span class="cm">// Full name (e.g., "Hydrochloric Acid")</span>
+  colorName: <span class="kw">string</span>;   <span class="cm">// Color description</span>
+  color: <span class="kw">string</span>;       <span class="cm">// CSS hex color</span>
+  state: <span class="str">"Liquid"</span> | <span class="str">"Solid"</span> | <span class="str">"Gas"</span>;
+  temp: <span class="kw">string</span>;        <span class="cm">// Standard temperature</span>
+  formula: <span class="kw">string</span>;     <span class="cm">// Chemical formula with subscripts</span>
+  category: <span class="kw">string</span>;    <span class="cm">// Classification category</span>
+  emoji: <span class="kw">string</span>;       <span class="cm">// Visual emoji indicator</span>
+}</code></pre>
+
+<h4>Reaction Record Interface</h4>
+<pre><code><span class="kw">export interface</span> <span class="fn">ReactionRecord</span> {
+  id: <span class="kw">string</span>;
+  key: <span class="kw">string</span>;                   <span class="cm">// Sorted reactant IDs joined with "+"</span>
+  reactantIds: <span class="kw">string</span>[];
+  products: <span class="fn">ReactionProduct</span>[];
+  equation: <span class="kw">string</span>;              <span class="cm">// Balanced chemical equation</span>
+  type: <span class="fn">ReactionType</span>;
+  deltaH: <span class="kw">number</span>;               <span class="cm">// Enthalpy change (kJ/mol)</span>
+  requiresHeat: <span class="kw">boolean</span>;
+  minTemp: <span class="kw">number</span>;              <span class="cm">// Minimum temperature (°C)</span>
+  durationSec: <span class="kw">number</span>;           <span class="cm">// Base duration in seconds</span>
+  productColor: <span class="kw">string</span>;
+  description: <span class="kw">string</span>;
+}</code></pre>
+
+<h3>7.2 Union Types for Classification</h3>
+<pre><code><span class="kw">export type</span> <span class="fn">ReactionType</span> =
+  | <span class="str">"neutralization"</span>    <span class="cm">// Acid + Base → Salt + Water</span>
+  | <span class="str">"precipitation"</span>     <span class="cm">// Double displacement → insoluble product</span>
+  | <span class="str">"synthesis"</span>         <span class="cm">// A + B → AB</span>
+  | <span class="str">"decomposition"</span>     <span class="cm">// AB → A + B</span>
+  | <span class="str">"displacement"</span>      <span class="cm">// A + BC → AC + B</span>
+  | <span class="str">"combustion"</span>        <span class="cm">// Fuel + O₂ → CO₂ + H₂O</span>
+  | <span class="str">"generic"</span>;
+
+<span class="kw">export type</span> <span class="fn">Category</span> = <span class="str">"All"</span> | <span class="str">"Acid"</span> | <span class="str">"Base"</span> | <span class="str">"Salt"</span> | <span class="str">"Organic"</span>
+  | <span class="str">"Indicator"</span> | <span class="str">"Oxidizer"</span> | <span class="str">"Metal"</span> | <span class="str">"Gas"</span> | <span class="str">"Other"</span>;</code></pre>
+
+<h3>7.3 Engine State Types</h3>
+<p>The reaction engine operates on strongly-typed <code>SlotState</code> interfaces containing 15+ properties that track each container's chemicals, reaction progress, liquid level, temperature, and thermodynamic history. This comprehensive type system ensures that all chemistry simulation data flows through well-defined, compiler-verified channels.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 8                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">8</span> HTML5 Canvas Rendering Engine</h2>
+
+<h3>8.1 Canvas Architecture</h3>
+<p>The simulation's visual output is rendered entirely through the <strong>HTML5 Canvas 2D API</strong>. A single <code>&lt;canvas&gt;</code> element occupies the simulation area, and all drawing is performed programmatically using the Canvas 2D rendering context.</p>
+
+<h4>Rendering Pipeline (per frame, 60fps)</h4>
+<table>
+  <thead><tr><th>Step</th><th>Operation</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Clear Canvas</td><td><code>ctx.clearRect(0, 0, W, H)</code></td></tr>
+    <tr><td>2</td><td>Draw Background</td><td>Subtle grid lines (non-camera mode)</td></tr>
+    <tr><td>3</td><td>Draw Lab Floor</td><td>Gradient floor with amber glow line</td></tr>
+    <tr><td>4</td><td>Draw Platform Stands</td><td>3 visual stands for glassware</td></tr>
+    <tr><td>5</td><td>Draw Slot Liquids</td><td>Liquid fills with meniscus and reflections</td></tr>
+    <tr><td>6</td><td>Draw Particles</td><td>Droplets, smoke, bubbles, steam, fire, sparks</td></tr>
+    <tr><td>7</td><td>Draw World Objects</td><td>Vector-art glassware with transformations</td></tr>
+    <tr><td>8</td><td>Draw Heat Shimmer</td><td>Wavy shimmer above heated containers</td></tr>
+    <tr><td>9</td><td>Draw Reaction Glow</td><td>Animated neon aura around reacting containers</td></tr>
+    <tr><td>10</td><td>Draw Temp Graph</td><td>Thermodynamic telemetry chart overlay</td></tr>
+  </tbody>
+</table>
+
+<h3>8.2 Vector Art Rendering</h3>
+<p>Instead of using pre-rendered images, all laboratory tools are drawn programmatically using Canvas path operations. This enables <strong>resolution independence</strong> (tools look sharp at any size), <strong>dynamic state visualization</strong> (liquid levels, flame animation, temperature readings), and <strong>customizable skins</strong> (Classic, Copper, Cyber, Gold themes).</p>
+
+<h3>8.3 Tool Types Rendered</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Drawing Technique</th><th>Dynamic Elements</th></tr></thead>
+  <tbody>
+    <tr><td>Flask (Erlenmeyer)</td><td>Bézier curves + ellipse rim</td><td>Liquid level, meniscus, glass shine</td></tr>
+    <tr><td>Beaker</td><td>Rectangular body + pour spout</td><td>Measurement lines, liquid fill</td></tr>
+    <tr><td>Test Tube</td><td>Narrow cylinder + rounded bottom</td><td>Liquid fill, rim ellipse</td></tr>
+    <tr><td>Bunsen Burner</td><td>Polygonal base + nozzle</td><td>Animated dual flame (inner blue, outer orange)</td></tr>
+    <tr><td>Dropper</td><td>Glass tube + rubber bulb</td><td>Drip animation, liquid inside</td></tr>
+    <tr><td>Graduated Cylinder</td><td>Narrow tube + graduation marks</td><td>Rim, graduation ticks</td></tr>
+    <tr><td>Petri Dish</td><td>Dual ellipses (top view)</td><td>3D lid edge effect</td></tr>
+    <tr><td>Thermometer</td><td>Glass backing + mercury column</td><td>Dynamic temperature display</td></tr>
+    <tr><td>pH Meter</td><td>Probe shaft + digital display</td><td>Real-time pH reading with color glow</td></tr>
+  </tbody>
+</table>
+
+<h3>8.4 Particle System</h3>
+<p>The particle system supports <strong>8 distinct particle types</strong>:</p>
+<table>
+  <thead><tr><th>Type</th><th>Visual</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>droplet</code></td><td>Colored ellipse</td><td>Gravity-affected, fast decay</td></tr>
+    <tr><td><code>smoke</code></td><td>Radial gradient circle</td><td>Rising, lateral drift</td></tr>
+    <tr><td><code>bubble</code></td><td>Stroked circle + highlight</td><td>Rising inside containers, pop at surface</td></tr>
+    <tr><td><code>steam</code></td><td>Fading white gradient</td><td>Rising, expanding, lateral oscillation</td></tr>
+    <tr><td><code>fire</code></td><td>Radial gradient (blue/orange)</td><td>Shrinking, fast decay</td></tr>
+    <tr><td><code>spark</code></td><td>Line segment (motion trail)</td><td>Gravity-affected, fast</td></tr>
+    <tr><td><code>precipitate</code></td><td>Small solid circle</td><td>Sinks to container bottom</td></tr>
+    <tr><td><code>ring</code></td><td>Expanding circle stroke</td><td>Expanding, fast fade (completion effect)</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================================== -->
+<!--         CHAPTER 9                     -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">9</span> Real-Time Reaction Engine</h2>
+
+<h3>9.1 Engine Architecture</h3>
+<p>The reaction engine (<code>reactionEngine.ts</code>) is the scientific core of the application. It is designed as a <strong>pure function</strong> — it takes the current state, delta time, and returns the next state. This makes it side-effect free, deterministic, and testable.</p>
+
+<pre><code><span class="kw">export function</span> <span class="fn">tickEngine</span>(
+  slots: <span class="fn">SlotState</span>[],
+  objects: <span class="fn">EngineObject</span>[],
+  dt: <span class="kw">number</span>,
+  now: <span class="kw">number</span>
+): <span class="fn">EngineOutput</span> {
+  <span class="cm">// ... 200+ lines of simulation logic</span>
+}</code></pre>
+
+<h3>9.2 Tick Processing Pipeline</h3>
+<table>
+  <thead><tr><th>Step</th><th>Operation</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Thermal Dynamics</td><td>Calculate target temperature, apply exponential approach, clamp to [20°C, 300°C], check overheating safety (&gt;220°C → burst)</td></tr>
+    <tr><td>2</td><td>Liquid Color Update</td><td>Calculate pH, check for indicator chemicals, apply color</td></tr>
+    <tr><td>3</td><td>Physical Evaporation</td><td>If T &gt; 95°C, reduce liquid level; if depleted, clear state</td></tr>
+    <tr><td>4</td><td>Cancellation Detection</td><td>If reacting with &lt;2 chemicals, cancel reaction</td></tr>
+    <tr><td>5</td><td>Find Matching Reaction</td><td>Look up in registry via sorted key join</td></tr>
+    <tr><td>6</td><td>Heat-Required Check</td><td>If reaction needs heat but no burner → "heat-required"</td></tr>
+    <tr><td>7</td><td>Trigger New Reaction</td><td>Check temperature ≥ minTemp, initialize progress</td></tr>
+    <tr><td>8</td><td>Advance Progress</td><td>Calculate speed multiplier (heated: ×2.5, stirred: ×2.0), blend colors</td></tr>
+    <tr><td>9</td><td>Handle Completion</td><td>Generate products, consume reactants, apply final colors</td></tr>
+  </tbody>
+</table>
+
+<h3>9.3 Thermodynamic Modeling</h3>
+<p>The engine models enthalpy (ΔH) contribution to temperature:</p>
+<pre><code><span class="cm">// Scale deltaH so max contribution ≈ 80°C at ΔH = -100 kJ/mol</span>
+<span class="kw">const</span> tempContrib = (-reaction.deltaH / <span class="num">100</span>) * <span class="num">80</span> * s.reactionProgress;
+<span class="kw">const</span> reactionTemp = s.startTemp + Math.max(<span class="num">0</span>, tempContrib);</code></pre>
+
+<h3>9.4 pH Calculation System</h3>
+<p>The engine includes a real-time pH calculator that categorizes chemicals by acid/base strength. Strong acids (HCl, H₂SO₄, HNO₃) contribute a factor of 3.0, weak acids contribute 1.5. The final pH = 7.0 + (baseFactor − acidFactor), clamped to [1.0, 14.0].</p>
+
+<h3>9.5 Indicator Color System</h3>
+<table>
+  <thead><tr><th>Indicator</th><th>Acid Color</th><th>Neutral</th><th>Base Color</th></tr></thead>
+  <tbody>
+    <tr><td>Universal</td><td>Red → Orange → Yellow → Green</td><td>Green</td><td>Cyan → Blue → Purple</td></tr>
+    <tr><td>Phenolphthalein</td><td>Colorless</td><td>Colorless</td><td>Pink (#f472b6)</td></tr>
+    <tr><td>Litmus</td><td>Red</td><td>Purple</td><td>Blue</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================================== -->
+<!--         CHAPTER 10                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">10</span> Chemical Database &amp; Reaction Registry</h2>
+
+<h3>10.1 Chemical Database</h3>
+<p>The application contains <strong>150+ chemicals</strong> organized into 9 categories:</p>
+<table>
+  <thead><tr><th>Category</th><th>Count</th><th>Examples</th></tr></thead>
+  <tbody>
+    <tr><td>Acid</td><td>21</td><td>HCl, H₂SO₄, HNO₃, CH₃COOH, HF, HCN</td></tr>
+    <tr><td>Base</td><td>16</td><td>NaOH, KOH, Ca(OH)₂, NH₄OH, Mg(OH)₂</td></tr>
+    <tr><td>Salt</td><td>32</td><td>NaCl, CuSO₄, AgNO₃, NaHCO₃, CaCO₃</td></tr>
+    <tr><td>Organic</td><td>21</td><td>Ethanol, Methanol, Acetone, Benzene, Glucose</td></tr>
+    <tr><td>Indicator</td><td>9</td><td>Phenolphthalein, Litmus, Universal, Methyl Orange</td></tr>
+    <tr><td>Oxidizer</td><td>11</td><td>KMnO₄, H₂O₂, K₂Cr₂O₇, MnO₂, KNO₃</td></tr>
+    <tr><td>Metal</td><td>19</td><td>Zn, Fe, Cu, Mg, Al, Na, K, Au, Ag, Pt</td></tr>
+    <tr><td>Gas</td><td>17</td><td>CO₂, O₂, H₂, Cl₂, NH₃, N₂, He, Ar, Ne</td></tr>
+    <tr><td>Other</td><td>16</td><td>H₂O, SiO₂, CaO, Fe₂O₃, CuO, Sulfur, Iodine</td></tr>
+  </tbody>
+</table>
+
+<h3>10.2 Reaction Registry (21 Reactions)</h3>
+<table>
+  <thead><tr><th>#</th><th>Reaction</th><th>Type</th><th>ΔH (kJ/mol)</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>HCl + NaOH → NaCl + H₂O</td><td>Neutralization</td><td>−57.3</td></tr>
+    <tr><td>2</td><td>2H₂ + O₂ → 2H₂O</td><td>Synthesis</td><td>−483.6</td></tr>
+    <tr><td>3</td><td>AgNO₃ + NaCl → AgCl↓ + NaNO₃</td><td>Precipitation</td><td>−65.5</td></tr>
+    <tr><td>4</td><td>CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄</td><td>Precipitation</td><td>−45.2</td></tr>
+    <tr><td>5</td><td>H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O</td><td>Neutralization</td><td>−112.4</td></tr>
+    <tr><td>6</td><td>CH₃COOH + NaOH → CH₃COONa + H₂O</td><td>Neutralization</td><td>−55.8</td></tr>
+    <tr><td>7</td><td>HNO₃ + KOH → KNO₃ + H₂O</td><td>Neutralization</td><td>−57.0</td></tr>
+    <tr><td>8</td><td>Ba(OH)₂ + H₂SO₄ → BaSO₄↓ + 2H₂O</td><td>Precipitation</td><td>−180.0</td></tr>
+    <tr><td>9</td><td>FeSO₄ + 2NaOH → Fe(OH)₂↓ + Na₂SO₄</td><td>Precipitation</td><td>−40.0</td></tr>
+    <tr><td>10</td><td>Ca(OH)₂ + 2HCl → CaCl₂ + 2H₂O</td><td>Neutralization</td><td>−115.4</td></tr>
+  </tbody>
+</table>
+<p><em>+ 11 additional reactions (see Appendix in Markdown report)</em></p>
+
+<h3>10.3 Reaction Lookup Algorithm</h3>
+<p>The lookup uses a two-phase sorted-key strategy: first a full-set key match (all chemicals sorted and joined with "+"), then a pairwise fallback for multi-component mixtures. Water (H₂O) is filtered out as a spectator.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 11                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">11</span> Physics Simulation System</h2>
+
+<h3>11.1 Physics Constants</h3>
+<table>
+  <thead><tr><th>Constant</th><th>Value</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>GRAVITY</td><td>600 px/s²</td><td>Gravitational acceleration</td></tr>
+    <tr><td>DAMPING</td><td>0.65</td><td>Coefficient of restitution (bounce)</td></tr>
+    <tr><td>ANGULAR_DAMPING</td><td>0.85</td><td>Rotational velocity decay</td></tr>
+    <tr><td>OBJECT_SIZE</td><td>72 px</td><td>Standard object bounding size</td></tr>
+  </tbody>
+</table>
+
+<h3>11.2 Physics Update Loop</h3>
+<p>Every animation frame, the following computations are performed for each non-grabbed object:</p>
+<pre><code><span class="cm">// 1. Apply gravity</span>
+obj.vy += GRAVITY * dt;
+
+<span class="cm">// 2. Update position</span>
+obj.x += obj.vx * dt;
+obj.y += obj.vy * dt;
+
+<span class="cm">// 3. Update rotation</span>
+obj.rotation += obj.angularVel * dt;
+obj.angularVel *= ANGULAR_DAMPING;
+
+<span class="cm">// 4. Floor collision</span>
+<span class="kw">if</span> (obj.y > floorY - SIZE / <span class="num">2</span>) {
+  obj.y = floorY - SIZE / <span class="num">2</span>;
+  obj.vy *= -DAMPING;       <span class="cm">// Bounce</span>
+  obj.vx *= <span class="num">0.85</span>;            <span class="cm">// Friction</span>
+  <span class="kw">if</span> (Math.abs(obj.vy) < <span class="num">20</span>) obj.vy = <span class="num">0</span>;  <span class="cm">// Rest</span>
+}</code></pre>
+
+<h3>11.3 Drag-and-Drop Physics</h3>
+<p>When objects are grabbed via mouse or gesture, velocity is computed from position deltas. When released, accumulated velocity creates a natural "throw" effect with continued momentum and eventual settling.</p>
+
+<h3>11.4 Proximity Detection</h3>
+<p>The system uses Euclidean distance to detect dropper-to-container proximity. When a dropper is within 90% of <code>OBJECT_SIZE</code> of a container, chemicals are automatically transferred and the liquid level increases by 35%.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 12                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">12</span> Hand Gesture Recognition — MediaPipe Integration</h2>
+
+<h3>12.1 MediaPipe Hand Landmarker</h3>
+<p>The project integrates Google's <strong>MediaPipe Hand Landmarker</strong> model to detect hand landmarks directly in the browser. The model detects <strong>21 3D landmarks</strong> per hand, supports <strong>up to 2 hands simultaneously</strong>, runs at <strong>30+ FPS</strong> via WebAssembly/WebGPU, and uses the <strong>float16</strong> precision model for optimal performance.</p>
+
+<h3>12.2 Dual-Hook Architecture</h3>
+<ol>
+  <li><strong><code>useCamera</code> hook</strong> — Primary camera hook with automatic bridge-to-browser fallback.</li>
+  <li><strong><code>usePythonBridge</code> hook</strong> — Direct bridge polling for Python-based hand tracking (75ms interval).</li>
+</ol>
+
+<h3>12.3 Pinch Gesture Detection</h3>
+<pre><code><span class="kw">const</span> PINCH_THRESHOLD = <span class="num">0.07</span>;  <span class="cm">// Normalized distance (0-1)</span>
+
+<span class="kw">const</span> dx = indexTip.x - thumbTip.x;
+<span class="kw">const</span> dy = indexTip.y - thumbTip.y;
+<span class="kw">const</span> dist = Math.sqrt(dx * dx + dy * dy);
+<span class="kw">const</span> isPinching = dist < PINCH_THRESHOLD;</code></pre>
+
+<h3>12.4 Gesture-to-Action Mapping</h3>
+<table>
+  <thead><tr><th>Gesture</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td>Pinch (single hand)</td><td>Grab nearest object</td></tr>
+    <tr><td>Move while pinching</td><td>Drag object to new position</td></tr>
+    <tr><td>Release pinch</td><td>Drop object (with physics momentum)</td></tr>
+    <tr><td>Pinch with second hand (holding dropper)</td><td>Dispense chemical drop</td></tr>
+    <tr><td>Pinch with second hand (holding burner)</td><td>Toggle flame on/off</td></tr>
+  </tbody>
+</table>
+
+<h3>12.5 Hand Skeleton Overlay</h3>
+<p>The real-time hand skeleton renders 20 bone connections using Canvas line drawing. Skeleton color is <strong>teal</strong> when the hand is open and switches to <strong>amber</strong> when pinching. Joint landmarks are drawn as filled circles with glow effects.</p>
+
+<h3>12.6 Performance Optimization</h3>
+<ul>
+  <li><strong>State update throttling:</strong> React state updates are throttled to ~10fps while actual detection runs at full camera rate. The <code>handDataRef</code> mutable ref provides latest data to the animation loop without triggering re-renders.</li>
+  <li><strong>Mirrored coordinates:</strong> Camera feed is mirrored (<code>scaleX(-1)</code>) and landmark x-coordinates inverted for natural interaction.</li>
+  <li><strong>Lazy loading:</strong> MediaPipe WASM modules loaded on first camera activation via dynamic <code>import()</code>.</li>
+</ul>
+
+<!-- ===================================== -->
+<!--         CHAPTER 13                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">13</span> Audio Snap Detection &amp; Web Audio API</h2>
+
+<h3>13.1 Web Audio API Overview</h3>
+<p>The project uses the <strong>W3C Web Audio API</strong> for two purposes: <strong>Sound Synthesis</strong> (output) and <strong>Snap Detection</strong> (input, via Python backend).</p>
+
+<h3>13.2 AudioSynth Sound Effects</h3>
+<table>
+  <thead><tr><th>Sound</th><th>Technique</th><th>Duration</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Bubble Pop</strong></td><td>Sine oscillator with rising frequency sweep (200–600Hz)</td><td>120ms</td></tr>
+    <tr><td><strong>Sizzle</strong></td><td>Looping white noise through 1600Hz bandpass filter, intensity-modulated</td><td>Continuous</td></tr>
+    <tr><td><strong>Success Chime</strong></td><td>C-major chord arpeggio (C5→E5→G5→C6) with staggered sine oscillators</td><td>500ms</td></tr>
+    <tr><td><strong>Explosion</strong></td><td>Low-pass filtered noise (450→10Hz) + sub-bass oscillator (80→20Hz)</td><td>850ms</td></tr>
+  </tbody>
+</table>
+
+<h3>13.3 Audio Context Lazy Initialization</h3>
+<p>Due to browser autoplay policies, the <code>AudioContext</code> is lazily initialized on first user interaction. The noise buffer (2 seconds of white noise) is pre-generated and reused for sizzle and explosion effects.</p>
+
+<h3>13.4 Snap Detection (Python Backend)</h3>
+<table>
+  <thead><tr><th>Event</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>SINGLE_SNAP</code></td><td>Turn Bunsen burner flame ON</td></tr>
+    <tr><td><code>DOUBLE_SNAP</code></td><td>Turn Bunsen burner flame OFF</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================================== -->
+<!--         CHAPTER 14                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">14</span> Python Backend Bridge Server</h2>
+
+<h3>14.1 Bridge Architecture</h3>
+<p>The Python backend serves as an optional bridge between native system hardware (webcam, microphone) and the browser-based frontend. It runs on <code>http://127.0.0.1:8765</code> using Python's <code>ThreadingHTTPServer</code>.</p>
+
+<h3>14.2 API Endpoints</h3>
+<table>
+  <thead><tr><th>Endpoint</th><th>Method</th><th>Response</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>/health</code></td><td>GET</td><td><code>{"ok": true}</code></td><td>Server health check</td></tr>
+    <tr><td><code>/state</code></td><td>GET</td><td>JSON with hands, audioEvent, paused</td><td>Hand data + audio events</td></tr>
+    <tr><td><code>/frame.jpg</code></td><td>GET</td><td>Binary JPEG image</td><td>Camera frame</td></tr>
+  </tbody>
+</table>
+
+<h3>14.3 CORS &amp; Security</h3>
+<p>Cross-origin requests are enabled with <code>Access-Control-Allow-Origin: *</code> for development. Frame responses include <code>Cache-Control: no-store</code> to prevent stale frames.</p>
+
+<h3>14.4 Thread-Safe State Publishing</h3>
+<p>Camera frames are JPEG-encoded at 70% quality and published via a thread-safe <code>threading.Lock</code>. The main loop publishes both frame data and hand state at each camera tick.</p>
+
+<h3>14.5 Bridge Fallback Mechanism</h3>
+<div class="diagram">1. User toggles camera ON
+2. Try Python Bridge → Poll /state endpoint
+3. If unavailable (connection refused) →
+4. Auto-switch to Browser Camera mode
+5. Initialize MediaPipe in-browser (dynamic import)
+6. Start detection loop with requestAnimationFrame</div>
+
+<!-- ===================================== -->
+<!--         CHAPTER 15                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">15</span> UI/UX Design &amp; Component Architecture</h2>
+
+<h3>15.1 Lab Page Layout</h3>
+<div class="diagram">┌────────────────────────────────────────────────────────────┐
+│                    TOP BAR (52px)                           │
+│  Logo │ Status Indicator │ Pause/Reset/Camera/Skin Buttons │
+├──────────┬─────────────────────────────┬───────────────────┤
+│          │                             │                   │
+│  LEFT    │    SIMULATION CANVAS        │  RIGHT PANEL      │
+│  PANEL   │    (Fills remaining space)  │  (280px)          │
+│  (260px) │                             │                   │
+│          │    ┌─ Lab Simulation ──────┐ │  Reaction Monitor │
+│ Chemical │    │  Canvas 2D Rendering  │ │  Products         │
+│ Selector │    │  Physics + Particles  │ │  Temperature      │
+│ Search   │    │  Glassware + Liquids  │ │  Reaction Library │
+│ Cards    │    └───────────────────────┘ │                   │
+│          │                             │                   │
+├──────────┴─────────────────────────────┴───────────────────┤
+│                  BOTTOM TOOLBAR (108px)                     │
+│  Flask │ Beaker │ Test Tube │ Burner │ Dropper │ ...      │
+└────────────────────────────────────────────────────────────┘</div>
+
+<h3>15.2 Left Panel — Chemical Selector</h3>
+<ul>
+  <li><strong>Search bar</strong> with real-time filtering across name, formula, category, and ID</li>
+  <li><strong>Category filter tabs</strong> — 10 pill-shaped buttons for each category</li>
+  <li><strong>Chemical cards</strong> — Color swatch, name, formula, state, temperature, category badge, "Add" button</li>
+  <li><strong>Chemical Info Modal</strong> — NFPA 704 diamond (SVG), physical properties grid, hazard statements, "Add to Lab" action</li>
+</ul>
+
+<h3>15.3 Right Panel — Reaction Monitor</h3>
+<ul>
+  <li>Status badges: Idle / Heat Required / Reacting / Complete</li>
+  <li>Chemical equation display (color-coded reactants → products)</li>
+  <li>Progress bar with gradient (rose → amber → emerald)</li>
+  <li>Temperature gauge (start/current/peak)</li>
+  <li>Product list with color swatches</li>
+  <li>Download Lab Report button (generates .md file)</li>
+  <li>Reaction Library — scrollable list of all 21 reactions</li>
+</ul>
+
+<h3>15.4 Bottom Toolbar</h3>
+<p>Tool spawning buttons for: Flask, Beaker, Test Tube, Bunsen Burner, Dropper, Graduated Cylinder, Petri Dish, Stirring Rod, Spatula, Thermometer, and pH Meter.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 16                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">16</span> CSS Design System &amp; Theming</h2>
+
+<h3>16.1 Design Token System</h3>
+<p>The project implements a comprehensive CSS custom properties system with <strong>52+ design tokens</strong>:</p>
+<pre><code><span class="cm">/* Color Palette */</span>
+--bg-void: <span class="str">#050810</span>;      <span class="cm">/* Deepest background */</span>
+--bg-deep: <span class="str">#080c18</span>;      <span class="cm">/* Deep background */</span>
+--amber: <span class="str">#f59e0b</span>;        <span class="cm">/* Primary accent */</span>
+--teal: <span class="str">#14b8a6</span>;         <span class="cm">/* Secondary accent */</span>
+--rose: <span class="str">#f43f5e</span>;         <span class="cm">/* Danger/alert */</span>
+--emerald: <span class="str">#10b981</span>;      <span class="cm">/* Success */</span>
+
+<span class="cm">/* Glassmorphism */</span>
+--glass-bg: rgba(<span class="num">13</span>, <span class="num">18</span>, <span class="num">32</span>, <span class="num">0.85</span>);
+--glass-border: rgba(<span class="num">255</span>, <span class="num">255</span>, <span class="num">255</span>, <span class="num">0.08</span>);</code></pre>
+
+<h3>16.2 Visual Design Philosophy</h3>
+<p>The application follows a <strong>dark-mode-first, sci-fi laboratory aesthetic</strong> with deep void backgrounds (#050810), amber accent (#f59e0b) for interactive elements, glassmorphism panels with backdrop-filter blur, and glow effects via box-shadow.</p>
+
+<h3>16.3 CSS File Statistics</h3>
+<p>The <code>globals.css</code> file spans <strong>1,538 lines</strong> and defines grid layouts, button variants, chemical card components, simulation area styling, panel components, hand gesture indicators, animation keyframes, and responsive utilities.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 17                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">17</span> State Management Architecture</h2>
+
+<h3>17.1 Strategy</h3>
+<p>The project uses <strong>React's built-in state management</strong> (useState + useRef + useCallback) without external libraries. This is justified because the simulation state needs frame-level access (60fps), the component tree is shallow, and cross-component communication is limited to parent-child props.</p>
+
+<h3>17.2 State Categories</h3>
+<table>
+  <thead><tr><th>Category</th><th>Storage</th><th>Update Frequency</th></tr></thead>
+  <tbody>
+    <tr><td>World objects</td><td><code>objectsRef</code> (mutable ref)</td><td>60fps</td></tr>
+    <tr><td>Particles</td><td><code>particlesRef</code> (mutable ref)</td><td>60fps</td></tr>
+    <tr><td>Reaction report</td><td><code>useState</code> in Lab page</td><td>Per-tick</td></tr>
+    <tr><td>Hand data (engine)</td><td><code>handDataRef</code> (mutable ref)</td><td>Camera FPS</td></tr>
+    <tr><td>Hand data (UI)</td><td><code>useState</code> in hook</td><td>~10fps (throttled)</td></tr>
+    <tr><td>Canvas dimensions</td><td><code>sizeRef</code> (mutable ref)</td><td>On resize</td></tr>
+    <tr><td>User session</td><td><code>localStorage</code></td><td>On login/logout</td></tr>
+  </tbody>
+</table>
+
+<h3>17.3 The Ref-vs-State Decision</h3>
+<div class="callout">
+  <strong>Key Design Decision:</strong> Mutable <code>useRef</code> is used for all high-frequency data (objects, particles, hand data) to ensure the animation loop runs at full speed without being blocked by React's reconciliation cycle. React <code>useState</code> is reserved exclusively for data that triggers visible UI re-renders.
+</div>
+
+<!-- ===================================== -->
+<!--         CHAPTER 18                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">18</span> Application Routing &amp; Page Structure</h2>
+
+<h3>18.1 Route Map</h3>
+<table>
+  <thead><tr><th>Route</th><th>Page</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td>LandingPage</td><td>Public</td><td>Hero section, features grid, CTAs</td></tr>
+    <tr><td><code>/lab</code></td><td>Lab</td><td>Protected</td><td>Full laboratory simulation</td></tr>
+    <tr><td><code>/dashboard</code></td><td>Dashboard</td><td>Protected</td><td>Student progress tracking</td></tr>
+    <tr><td><code>/login</code></td><td>LoginPage</td><td>Public</td><td>Simulated authentication</td></tr>
+    <tr><td><code>/periodic-table</code></td><td>PeriodicTable</td><td>Public</td><td>Interactive periodic table</td></tr>
+    <tr><td><code>/quiz</code></td><td>Quiz</td><td>Public</td><td>Chemistry safety quiz</td></tr>
+    <tr><td><code>/about</code></td><td>About</td><td>Public</td><td>Lab guide and documentation</td></tr>
+  </tbody>
+</table>
+
+<h3>18.2 Next.js App Router</h3>
+<p>The project uses Next.js App Router with file-based routing. Each page uses the <code>"use client"</code> directive as they require browser APIs. The <code>Navbar</code> component provides persistent navigation with a "Launch Lab" CTA and user session display.</p>
+
+<h3>18.3 Protected Route Pattern</h3>
+<p>Authentication uses a client-side redirect: if <code>localStorage.getItem("lab_user")</code> is null, the user is redirected to <code>/login?redirect=/lab</code>. After login, they return to their intended destination.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 19                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">19</span> Performance Optimization Techniques</h2>
+
+<h3>19.1 Rendering Optimizations</h3>
+<table>
+  <thead><tr><th>Technique</th><th>Impact</th></tr></thead>
+  <tbody>
+    <tr><td><code>requestAnimationFrame</code> loop at native refresh rate</td><td>Smooth 60fps</td></tr>
+    <tr><td>Delta-time capping (<code>Math.min(dt, 0.05)</code>)</td><td>Physics stability</td></tr>
+    <tr><td>Direct Canvas mutation (no React re-renders)</td><td>Zero overhead</td></tr>
+    <tr><td>Particle culling (filter on <code>life ≤ 0</code>)</td><td>Memory efficiency</td></tr>
+    <tr><td>ResizeObserver (cached in ref)</td><td>No per-frame DOM queries</td></tr>
+  </tbody>
+</table>
+
+<h3>19.2 React Optimizations</h3>
+<table>
+  <thead><tr><th>Technique</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>useCallback</code> for animation loop</td><td>Prevent function recreation</td></tr>
+    <tr><td><code>useMemo</code> for chemical filtering</td><td>Avoid recalculation</td></tr>
+    <tr><td><code>useRef</code> for mutable state</td><td>Avoid triggering re-renders</td></tr>
+    <tr><td>Throttled state updates (10fps)</td><td>Reduce reconciliation</td></tr>
+    <tr><td><code>forwardRef</code> + <code>useImperativeHandle</code></td><td>Clean parent-child API</td></tr>
+  </tbody>
+</table>
+
+<h3>19.3 Network &amp; Memory</h3>
+<ul>
+  <li>Bridge polling: 75ms interval (13fps) — sufficient for gestures, minimal CPU</li>
+  <li>JPEG quality: 70% compression for bridge frames</li>
+  <li>Graph history: Limited to 80 data points (<code>shift()</code> on overflow)</li>
+  <li>Lazy loading: MediaPipe WASM loaded on first camera activation</li>
+</ul>
+
+<!-- ===================================== -->
+<!--         CHAPTER 20                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">20</span> Security &amp; Data Handling</h2>
+
+<h3>20.1 Client-Side Security</h3>
+<table>
+  <thead><tr><th>Concern</th><th>Mitigation</th></tr></thead>
+  <tbody>
+    <tr><td>XSS</td><td>React's JSX auto-escapes all rendered values</td></tr>
+    <tr><td>Camera access</td><td>Browser permission prompt via <code>getUserMedia</code></td></tr>
+    <tr><td>localStorage tampering</td><td>Non-sensitive data only (name, EXP score)</td></tr>
+    <tr><td>CORS for bridge</td><td><code>Access-Control-Allow-Origin: *</code> (localhost only)</td></tr>
+  </tbody>
+</table>
+
+<h3>20.2 Data Privacy</h3>
+<ul>
+  <li>No server-side data storage — all data in <code>localStorage</code></li>
+  <li>No telemetry or analytics</li>
+  <li>Camera feed processed entirely client-side</li>
+  <li>No <code>eval()</code>, <code>innerHTML</code>, or <code>dangerouslySetInnerHTML</code> usage</li>
+  <li>TypeScript strict mode catches errors at build time</li>
+</ul>
+
+<!-- ===================================== -->
+<!--         CHAPTER 21                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">21</span> Testing &amp; Quality Assurance</h2>
+
+<h3>21.1 Code Quality</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>TypeScript (strict mode)</td><td>Compile-time type checking</td></tr>
+    <tr><td>ESLint 9 (<code>eslint-config-next</code>)</td><td>Code style and best practices</td></tr>
+    <tr><td>Next.js Build</td><td>Production build validation</td></tr>
+  </tbody>
+</table>
+
+<h3>21.2 Browser Compatibility</h3>
+<table>
+  <thead><tr><th>Browser</th><th>Version</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Google Chrome</td><td>125+</td><td>✅ Full support</td></tr>
+    <tr><td>Mozilla Firefox</td><td>130+</td><td>✅ Full support</td></tr>
+    <tr><td>Microsoft Edge</td><td>125+</td><td>✅ Full support</td></tr>
+    <tr><td>Safari</td><td>18+</td><td>⚠️ WebGPU varies</td></tr>
+  </tbody>
+</table>
+
+<h3>21.3 Testability</h3>
+<p>The reaction engine's pure-function design enables straightforward unit testing of <code>tickEngine()</code>, <code>findReaction()</code>, and <code>calculatePH()</code> without browser dependencies.</p>
+
+<!-- ===================================== -->
+<!--         CHAPTER 22                    -->
+<!-- ===================================== -->
+<div class="page-break"></div>
+<h2><span class="ch-num">22</span> Conclusion &amp; Future Scope</h2>
+
+<h3>22.1 Summary of Achievements</h3>
+<ol>
+  <li>Real-time chemical reaction simulation with 21 reactions and thermodynamic modeling</li>
+  <li>Physics-driven object interaction with gravity, collision, and momentum on HTML5 Canvas</li>
+  <li>Computer vision gesture control using MediaPipe with dual-hand pinch detection</li>
+  <li>Acoustic snap detection for hands-free Bunsen burner control</li>
+  <li>Comprehensive database of 150+ chemicals with accurate properties</li>
+  <li>Immersive audio via Web Audio API (bubble, sizzle, explosion, success sounds)</li>
+  <li>Premium dark-mode UI with glassmorphism, CSS Grid, and micro-animations</li>
+  <li>Cross-platform web delivery requiring no installation</li>
+</ol>
+
+<h3>22.2 Future Scope</h3>
+<table>
+  <thead><tr><th>Enhancement</th><th>Technology</th><th>Impact</th></tr></thead>
+  <tbody>
+    <tr><td>3D Rendering</td><td>Three.js / React Three Fiber</td><td>Photorealistic glassware</td></tr>
+    <tr><td>Voice Commands</td><td>Web Speech API</td><td>"Pour HCl into the beaker"</td></tr>
+    <tr><td>AI Lab Assistant</td><td>Gemini API / LLM</td><td>Real-time chemistry Q&amp;A</td></tr>
+    <tr><td>Multiplayer Labs</td><td>WebSocket / WebRTC</td><td>Collaborative experiments</td></tr>
+    <tr><td>Persistent Backend</td><td>Firebase / Supabase</td><td>Cloud-saved progress</td></tr>
+    <tr><td>AR Integration</td><td>WebXR API</td><td>Virtual overlay on real bench</td></tr>
+    <tr><td>Mobile App</td><td>React Native / PWA</td><td>Full mobile experience</td></tr>
+  </tbody>
+</table>
+
+<h3>22.3 Final Remarks</h3>
+<p>This project demonstrates that modern web technologies have matured to a point where complex, real-time scientific simulations — including computer vision, audio processing, physics engines, and chemistry modeling — can all run directly in the browser at 60fps. The Virtual Chemistry Laboratory is not just a demonstration of technical capability; it is a practical educational tool that can bring safe, free, and repeatable chemistry experimentation to students worldwide.</p>
+
+<div class="page-break"></div>
+<h2>References</h2>
+<ol>
+  <li>Dalgarno, B., Bishop, A.G., Adlong, W., &amp; Bedgood Jr, D.R. (2009). "Effectiveness of a Virtual Laboratory as a preparatory resource for Distance Education chemistry students." <em>Computers &amp; Education</em>, 53(3), 853-865.</li>
+  <li>Lugaresi, C., et al. (2019). "MediaPipe: A Framework for Building Perception Pipelines." <em>arXiv preprint arXiv:1906.08172</em>.</li>
+  <li>Roberts, C., Wakefield, G., &amp; Wright, M. (2014). "The Web Browser as Synthesizer and Interface." <em>Proceedings of NIME</em>.</li>
+  <li>Meta Open Source. (2024). "React 19 Documentation." https://react.dev/</li>
+  <li>Vercel Inc. (2026). "Next.js 16 Documentation." https://nextjs.org/docs</li>
+  <li>Google LLC. (2024). "MediaPipe Hand Landmarker." https://developers.google.com/mediapipe/solutions/vision/hand_landmarker</li>
+  <li>W3C. (2021). "Web Audio API Specification." https://www.w3.org/TR/webaudio/</li>
+  <li>W3C. (2023). "HTML Canvas 2D Context Specification." https://html.spec.whatwg.org/multipage/canvas.html</li>
+  <li>ECMA International. (2023). "TypeScript Language Specification." https://www.typescriptlang.org/docs/</li>
+  <li>MDN Web Docs. (2024). "MediaStream API." https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_API</li>
+</ol>
+
+<div class="footer-bar">
+  <strong>Virtual Chemistry Laboratory</strong> — Web Technology Report · June 2026 · 30 Pages<br>
+  Generated from project source code analysis
+</div>
+
+</body>
+</html>
